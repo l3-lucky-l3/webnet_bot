@@ -17,11 +17,32 @@ cp bot.env.example bot.env
 - `REMNAWAVE_*` - настройки Remnawave API
 - `SECRET_KEY` - секретный ключ Django
 
-### 2. Запуск бота
+### 2. Сборка и запуск
 
+**Важно для пользователей с VPN/Прокси:**  
+Если у вас включен VPN или прокси (например, `http://127.0.0.1:10809`), используйте специальные аргументы для сборки:
+
+**Windows (PowerShell):**
+```powershell
+$env:DOCKER_BUILDKIT=0; docker compose build --no-cache --build-arg HTTP_PROXY=http://host.docker.internal:10809 --build-arg HTTPS_PROXY=http://host.docker.internal:10809 --build-arg http_proxy=http://host.docker.internal:10809 --build-arg https_proxy=http://host.docker.internal:10809
+```
+
+**Linux/Mac:**
 ```bash
-# Сборка и запуск
+export DOCKER_BUILDKIT=0
+docker compose build --no-cache \
+  --build-arg HTTP_PROXY=http://host.docker.internal:10809 \
+  --build-arg HTTPS_PROXY=http://host.docker.internal:10809 \
+  --build-arg http_proxy=http://host.docker.internal:10809 \
+  --build-arg https_proxy=http://host.docker.internal:10809
+```
+
+*> Замените `10809` на порт вашего прокси, если он отличается.*
+
+**Обычный запуск (без VPN):**
+```bash
 docker-compose up -d --build
+```
 
 # Просмотр логов
 docker-compose logs -f bot
