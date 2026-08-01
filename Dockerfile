@@ -25,9 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 
 # Установка Python-зависимостей через прокси
-RUN pip install --no-cache-dir \
-    --proxy http://127.0.0.1:10809 \
-    -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование всего проекта
 COPY . .

@@ -11,6 +11,8 @@ services:
         - https_proxy=http://127.0.0.1:10809
     container_name: telegram-vpn-bot
     restart: unless-stopped
+    env_file:
+      - .env
     volumes:
       # Монтирование базы данных напрямую из папки проекта
       - ./data:/app/data
