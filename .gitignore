@@ -1,46 +1,47 @@
 ```
-# Environment files
-.env
-.env.local
-*.env.*
-
-# Docker related (if applicable)
-.dockerenv
-!Dockerfile
-!docker-compose.yml
-!bot.env.example
-
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
-*.swo
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Dependencies (if any detected)
+# Dependencies
 node_modules/
 .venv/
 venv/
 __pycache__/
-*.egg-info/
+.mypy_cache/
+.pytest_cache/
+target/
+.gradle/
 
-# Build artifacts (if any detected)
+# Build artifacts
 dist/
 build/
-target/
 *.pyc
+*.class
+*.o
+*.exe
+*.dll
+*.so
+*.a
+*.obj
+*.out
 
-# IDE files
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
 .vscode/
 .idea/
-*.iml
 
-# Coverage reports
+# System
+.DS_Store
+Thumbs.db
+
+# Coverage
 coverage/
 htmlcov/
 .coverage
@@ -64,8 +65,4 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
 ```

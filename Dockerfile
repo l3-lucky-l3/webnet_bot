@@ -2,10 +2,14 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Установка системных зависимостей
+# Игнорируем системные прокси внутри контейнера
+ENV HTTP_PROXY=""
+ENV HTTPS_PROXY=""
+ENV NO_PROXY="deb.debian.org,security.debian.org"
+
+# Устанавливаем только необходимые пакеты (без gcc и libpq-dev, так как используем SQLite)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Копирование файлов зависимостей
