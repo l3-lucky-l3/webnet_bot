@@ -7,6 +7,8 @@ services:
       args:
         - HTTP_PROXY=http://127.0.0.1:10809
         - HTTPS_PROXY=http://127.0.0.1:10809
+        - http_proxy=http://127.0.0.1:10809
+        - https_proxy=http://127.0.0.1:10809
     container_name: telegram-vpn-bot
     restart: unless-stopped
     volumes:
