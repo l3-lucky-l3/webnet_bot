@@ -23,15 +23,10 @@ def run_django_server():
     try:
         print("🌐 Запуск Django сервера...")
         
-        # Определяем команду для запуска в зависимости от ОС
-        if platform.system() == "Windows":
-            # На Windows используем start для запуска в новом окне
-            subprocess.Popen(['start', 'cmd', '/c', 'python manage.py runserver 8123'], 
-                           shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        else:
-            # На Unix-системах используем nohup
-            subprocess.Popen(['nohup', sys.executable, 'manage.py', 'runserver', '8123'], 
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # В Docker контейнере запускаем Django в фоне внутри того же процесса
+        # Используем Popen без перенаправления stdout/stderr чтобы видеть логи
+        subprocess.Popen([sys.executable, 'manage.py', 'runserver', '0.0.0.0:8123'],
+                       stdout=None, stderr=None)
         
         return True
     except Exception as e:
@@ -55,7 +50,7 @@ if __name__ == "__main__":
     if run_django_server():
         # Ждем немного, чтобы Django успел запуститься
         print("⏳ Ожидание запуска Django сервера...")
-        time.sleep(8)
+        time.sleep(10)  # Увеличиваем время ожидания до 10 секунд
         
         print("✅ Django сервер должен быть запущен на http://127.0.0.1:8123/")
         print("✅ Telegram бот запущен")
