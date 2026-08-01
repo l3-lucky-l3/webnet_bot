@@ -1,0 +1,36 @@
+[Unit]
+Description=VPN Bot Telegram Service
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vpn-bot
+Environment=DJANGO_SETTINGS_MODULE=tg_bot_admin.settings_production
+EnvironmentFile=/var/www/vpn-bot/.env
+ExecStart=/var/www/vpn-bot/venv/bin/python bot_with_django.py
+Restart=always
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=5
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/vpn-bot/logs /var/www/vpn-bot/media
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vpn-bot-telegram
+
+# Ограничения ресурсов
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,328 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Редактирование ключа - Админка Telegram бота{% endblock %}
+{% block page_title %}Редактирование ключа{% endblock %}
+{% block page_subtitle %}Изменение параметров ключа подписки{% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-edit"></i> Редактирование ключа #{{ key.key_id }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <form id="editKeyForm">
+                    {% csrf_token %}
+                    
+                    <!-- Информация о ключе -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-key"></i> Информация о ключе</h6>
+                                <p class="mb-0"><strong>Значение:</strong> <code>{{ key.key_value }}</code></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Настройки ключа -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="subscription_type" class="form-label">
+                                <i class="fas fa-calendar"></i> Тип подписки
+                            </label>
+                            <select class="form-select" id="subscription_type" name="subscription_type" required>
+                                {% for value, label in subscription_types %}
+                                    <option value="{{ value }}" {% if value == key.subscription_type %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="total_activations" class="form-label">
+                                <i class="fas fa-users"></i> Общее количество активаций
+                            </label>
+                            <select class="form-select" id="total_activations" name="total_activations" required>
+                                {% for value, label in activation_choices %}
+                                    <option value="{{ value }}" {% if value == key.total_activations %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Использованные активации -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="used_activations" class="form-label">
+                                <i class="fas fa-check-circle"></i> Использованные активации
+                            </label>
+                            <input type="number" class="form-control" id="used_activations" 
+                                   name="used_activations" value="{{ key.used_activations }}" 
+                                   min="0" max="{{ key.total_activations }}" required>
+                            <div class="form-text">
+                                Максимум: {{ key.total_activations }} активаций
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                <i class="fas fa-chart-pie"></i> Прогресс использования
+                            </label>
+                            <div class="progress mb-2" style="height: 20px;">
+                                {% with percent=key.usage_percent %}
+                                    <div class="progress-bar 
+                                        {% if percent >= 90 %}bg-danger
+                                        {% elif percent >= 70 %}bg-warning
+                                        {% else %}bg-success{% endif %}" 
+                                         style="width: {{ percent }}%">
+                                        {{ percent|floatformat:1 }}%
+                                    </div>
+                                {% endwith %}
+                            </div>
+                            <div class="text-xs text-muted">
+                                {{ key.used_activations }} из {{ key.total_activations }} активаций
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Статус -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" 
+                                       name="is_active" {% if key.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    <i class="fas fa-toggle-on"></i> Ключ активен
+                                </label>
+                                <div class="form-text">
+                                    Неактивные ключи не могут быть использованы для активации подписки
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-save"></i> Сохранить изменения
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg ms-2" onclick="history.back()">
+                                <i class="fas fa-arrow-left"></i> Назад
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-danger" onclick="deleteKey({{ key.key_id }})">
+                                <i class="fas fa-trash"></i> Удалить ключ
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Результат -->
+<div class="row" id="resultRow" style="display: none;">
+    <div class="col-12">
+        <div class="card shadow mb-4" id="resultCard">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold" id="resultTitle">
+                    <i class="fas fa-check-circle"></i> Результат
+                </h6>
+            </div>
+            <div class="card-body" id="resultBody">
+                <!-- Результат будет вставлен сюда -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.progress {
+    background-color: #e9ecef;
+}
+
+.result-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.result-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обновляем прогресс при изменении использованных активаций
+    document.getElementById('used_activations').addEventListener('input', updateProgress);
+    document.getElementById('total_activations').addEventListener('change', updateProgress);
+    
+    document.getElementById('editKeyForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateKey();
+    });
+});
+
+function updateProgress() {
+    const used = parseInt(document.getElementById('used_activations').value) || 0;
+    const total = parseInt(document.getElementById('total_activations').value) || 3;
+    const percent = Math.min((used / total) * 100, 100);
+    
+    const progressBar = document.querySelector('.progress-bar');
+    progressBar.style.width = percent + '%';
+    progressBar.textContent = percent.toFixed(1) + '%';
+    
+    // Обновляем цвет
+    progressBar.className = 'progress-bar';
+    if (percent >= 90) {
+        progressBar.classList.add('bg-danger');
+    } else if (percent >= 70) {
+        progressBar.classList.add('bg-warning');
+    } else {
+        progressBar.classList.add('bg-success');
+    }
+    
+    // Обновляем текст
+    document.querySelector('.text-xs.text-muted').textContent = `${used} из ${total} активаций`;
+}
+
+function updateKey() {
+    const form = document.getElementById('editKeyForm');
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Показываем загрузку
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Сохраняем...';
+    submitBtn.disabled = true;
+    
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showResult(data);
+        if (data.success) {
+            setTimeout(() => {
+                window.location.href = '{% url "bot_management:keys_list" %}';
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showResult({
+            success: false,
+            message: 'Произошла ошибка при сохранении'
+        });
+    })
+    .finally(() => {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Сохранить изменения';
+        submitBtn.disabled = false;
+    });
+}
+
+function deleteKey(keyId) {
+    if (confirm('Вы уверены, что хотите удалить этот ключ? Это действие необратимо!')) {
+        fetch(`{% url 'bot_management:delete_key' 0 %}`.replace('0', keyId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Ключ успешно удален!');
+                window.location.href = '{% url "bot_management:keys_list" %}';
+            } else {
+                alert('Ошибка при удалении: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при удалении ключа');
+        });
+    }
+}
+
+function showResult(data) {
+    const resultRow = document.getElementById('resultRow');
+    const resultCard = document.getElementById('resultCard');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultBody = document.getElementById('resultBody');
+    
+    // Убираем предыдущие классы
+    resultCard.className = 'card shadow mb-4';
+    resultTitle.className = 'm-0 font-weight-bold';
+    
+    if (data.success) {
+        resultCard.classList.add('result-success');
+        resultTitle.innerHTML = '<i class="fas fa-check-circle"></i> Ключ успешно обновлен';
+        resultBody.innerHTML = `<div class="alert alert-success">
+            <h5><i class="fas fa-check"></i> ${data.message}</h5>
+        </div>`;
+    } else {
+        resultCard.classList.add('result-error');
+        resultTitle.innerHTML = '<i class="fas fa-times-circle"></i> Ошибка обновления';
+        resultBody.innerHTML = `<div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle"></i> ${data.message}</h5>
+        </div>`;
+    }
+    
+    resultRow.style.display = 'block';
+    resultRow.scrollIntoView({ behavior: 'smooth' });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

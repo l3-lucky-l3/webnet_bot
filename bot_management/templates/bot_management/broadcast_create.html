@@ -1,0 +1,394 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Создание рассылки - Админка Telegram бота{% endblock %}
+{% block page_title %}Создание рассылки{% endblock %}
+{% block page_subtitle %}Создайте и отправьте рассылку всем пользователям{% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-bullhorn"></i> Создание новой рассылки
+                </h6>
+            </div>
+            <div class="card-body">
+                <form id="broadcastForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Предварительный просмотр -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Текст сообщения:</h6>
+                            <div class="form-group">
+                                <textarea class="form-control" id="messageText" rows="8" 
+                                          placeholder="Введите текст рассылки...&#10;&#10;Поддерживается HTML разметка:&#10;&lt;b&gt;жирный текст&lt;/b&gt;&#10;&lt;i&gt;курсив&lt;/i&gt;&#10;&lt;u&gt;подчеркнутый&lt;/u&gt;&#10;&lt;s&gt;зачеркнутый&lt;/s&gt;&#10;&lt;code&gt;моноширинный&lt;/code&gt;&#10;&lt;pre&gt;предварительно отформатированный&lt;/pre&gt;&#10;&lt;a href=&quot;URL&quot;&gt;ссылка&lt;/a&gt;"></textarea>
+                            </div>
+                            
+                            <!-- Кнопки форматирования -->
+                            <div class="btn-group mb-3" role="group">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="formatText('bold')">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="formatText('italic')">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="formatText('underline')">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="formatText('strikethrough')">
+                                    <i class="fas fa-strikethrough"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="formatText('code')">
+                                    <i class="fas fa-code"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="formatText('link')">
+                                    <i class="fas fa-link"></i>
+                                </button>
+                            </div>
+                        
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6>Предварительный просмотр:</h6>
+                            <div class="border rounded p-3" style="min-height: 200px; background-color: #f8f9fa;" id="preview">
+                                <div class="text-muted">Предварительный просмотр появится здесь...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Статистика получателей -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-users"></i> Получатели рассылки</h6>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>Всего пользователей:</strong> <span id="totalUsers">{{ total_users|default:"-" }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Активных:</strong> <span id="activeUsers">{{ active_users|default:"-" }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Новых за сегодня:</strong> <span id="newToday">{{ new_users_today|default:"-" }}</span>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>С подписками:</strong> <span id="withSubscriptions">{{ users_with_subscriptions|default:"-" }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Настройки рассылки -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6>Настройки рассылки:</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sendImmediately" checked>
+                                <label class="form-check-label" for="sendImmediately">
+                                    Отправить немедленно
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="sendToAdmins">
+                                <label class="form-check-label" for="sendToAdmins">
+                                    Отправить копию администраторам
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Дополнительные опции:</h6>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="disableWebPagePreview">
+                                <label class="form-check-label" for="disableWebPagePreview">
+                                    Отключить предварительный просмотр ссылок
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="disableNotification">
+                                <label class="form-check-label" for="disableNotification">
+                                    Отправить без звука
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки действий -->
+                    <div class="row">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-primary" onclick="previewBroadcast()">
+                                <i class="fas fa-eye"></i> Предварительный просмотр
+                            </button>
+                            <button type="button" class="btn btn-success" onclick="sendBroadcast()">
+                                <i class="fas fa-paper-plane"></i> Отправить рассылку
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="location.href='{% url 'bot_management:dashboard' %}'">
+                                <i class="fas fa-arrow-left"></i> Назад к дашборду
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для предварительного просмотра -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Предварительный просмотр рассылки</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                    <div id="modalPreview"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <button type="button" class="btn btn-success" onclick="sendBroadcast()">
+                    <i class="fas fa-paper-plane"></i> Отправить рассылку
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Подавление ошибок расширений браузера
+window.addEventListener('error', function(e) {
+    if (e.message && e.message.includes('runtime.lastError')) {
+        e.preventDefault();
+        return false;
+    }
+});
+
+// Подавление ошибок портов сообщений
+window.addEventListener('unhandledrejection', function(e) {
+    if (e.reason && e.reason.message && e.reason.message.includes('message port closed')) {
+        e.preventDefault();
+        return false;
+    }
+});
+let imageFile = null;
+
+// Загрузка статистики при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+    updatePreview();
+});
+
+// Загрузка статистики пользователей
+async function loadStatistics() {
+    try {
+        const response = await fetch('/bot_management/api/statistics/', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (!response.ok) {
+            console.warn('Статистика недоступна, используются данные из шаблона');
+            return;
+        }
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const totalUsersEl = document.getElementById('totalUsers');
+            const activeUsersEl = document.getElementById('activeUsers');
+            const newTodayEl = document.getElementById('newToday');
+            const withSubscriptionsEl = document.getElementById('withSubscriptions');
+            
+            if (totalUsersEl) totalUsersEl.textContent = data.data.users.total;
+            if (activeUsersEl) activeUsersEl.textContent = data.data.users.total;
+            if (newTodayEl) newTodayEl.textContent = data.data.users.new_today;
+            if (withSubscriptionsEl) withSubscriptionsEl.textContent = data.data.payments.confirmed;
+        }
+    } catch (error) {
+        console.warn('Ошибка загрузки статистики:', error);
+        // Не показываем ошибку пользователю, так как данные уже есть в шаблоне
+    }
+}
+
+// Обновление предварительного просмотра
+function updatePreview() {
+    const messageTextElement = document.getElementById('messageText');
+    const preview = document.getElementById('preview');
+    
+    if (!messageTextElement || !preview) {
+        return;
+    }
+    
+    const messageText = messageTextElement.value;
+    
+    if (messageText.trim()) {
+        preview.innerHTML = messageText;
+    } else {
+        preview.innerHTML = '<div class="text-muted">Предварительный просмотр появится здесь...</div>';
+    }
+}
+
+// Обработка загрузки изображения
+document.getElementById('imageFile').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        imageFile = file;
+        updatePreview();
+    }
+});
+
+// Форматирование текста
+function formatText(type) {
+    const textarea = document.getElementById('messageText');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    
+    let formattedText = '';
+    switch (type) {
+        case 'bold':
+            formattedText = `<b>${selectedText || 'жирный текст'}</b>`;
+            break;
+        case 'italic':
+            formattedText = `<i>${selectedText || 'курсив'}</i>`;
+            break;
+        case 'underline':
+            formattedText = `<u>${selectedText || 'подчеркнутый текст'}</u>`;
+            break;
+        case 'strikethrough':
+            formattedText = `<s>${selectedText || 'зачеркнутый текст'}</s>`;
+            break;
+        case 'code':
+            formattedText = `<code>${selectedText || 'код'}</code>`;
+            break;
+        case 'link':
+            const url = prompt('Введите URL:');
+            if (url) {
+                formattedText = `<a href="${url}">${selectedText || 'ссылка'}</a>`;
+            }
+            break;
+    }
+    
+    textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+    textarea.focus();
+    textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    updatePreview();
+}
+
+// Предварительный просмотр
+function previewBroadcast() {
+    const messageText = document.getElementById('messageText').value;
+    const modalPreview = document.getElementById('modalPreview');
+    
+    if (!messageText.trim()) {
+        alert('Введите текст сообщения');
+        return;
+    }
+    
+    modalPreview.innerHTML = messageText;
+    
+    // Показываем изображение если есть
+    if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'img-fluid mb-3';
+            modalPreview.insertBefore(img, modalPreview.firstChild);
+        };
+        reader.readAsDataURL(imageFile);
+    }
+    
+    new bootstrap.Modal(document.getElementById('previewModal')).show();
+}
+
+// Отправка рассылки
+async function sendBroadcast() {
+    const messageText = document.getElementById('messageText').value;
+    
+    if (!messageText.trim()) {
+        alert('Введите текст сообщения');
+        return;
+    }
+    
+    if (!confirm('Вы уверены, что хотите отправить рассылку всем пользователям?')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message_text', messageText);
+    formData.append('send_immediately', document.getElementById('sendImmediately').checked);
+    formData.append('send_to_admins', document.getElementById('sendToAdmins').checked);
+    formData.append('disable_web_page_preview', document.getElementById('disableWebPagePreview').checked);
+    formData.append('disable_notification', document.getElementById('disableNotification').checked);
+    
+    if (imageFile) {
+        formData.append('image', imageFile);
+    }
+    
+    try {
+        const response = await fetch('/bot_management/broadcast/create/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Рассылка успешно создана и отправлена!');
+                location.href = '/bot_management/';
+            } else {
+                alert('Ошибка: ' + (data.error || data.message || 'Неизвестная ошибка'));
+            }
+        } else {
+            // Если ответ не JSON, возможно это HTML страница входа
+            alert('Ошибка: Необходимо войти в систему');
+            location.href = '/admin/';
+        }
+    } catch (error) {
+        console.error('Ошибка отправки рассылки:', error);
+        alert('Произошла ошибка при отправке рассылки');
+    }
+}
+
+// Обновление предварительного просмотра при вводе
+document.addEventListener('DOMContentLoaded', function() {
+    const messageTextElement = document.getElementById('messageText');
+    if (messageTextElement) {
+        messageTextElement.addEventListener('input', updatePreview);
+    }
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

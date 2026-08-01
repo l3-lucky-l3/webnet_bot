@@ -1,0 +1,344 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Добавление ключей - Админка Telegram бота{% endblock %}
+{% block page_title %}Добавление ключей{% endblock %}
+{% block page_subtitle %}Массовое добавление ключей подписки{% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-key"></i> Массовое добавление ключей
+                </h6>
+            </div>
+            <div class="card-body">
+                <form id="addKeysForm">
+                    {% csrf_token %}
+                    
+                    <!-- Настройки ключей -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="subscription_type" class="form-label">
+                                <i class="fas fa-calendar"></i> Тип подписки
+                            </label>
+                            <select class="form-select" id="subscription_type" name="subscription_type" required>
+                                {% for value, label in subscription_types %}
+                                    <option value="{{ value }}" {% if value == 'month' %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="total_activations" class="form-label">
+                                <i class="fas fa-users"></i> Количество активаций
+                            </label>
+                            <select class="form-select" id="total_activations" name="total_activations" required>
+                                {% for value, label in activation_choices %}
+                                    <option value="{{ value }}" {% if value == 1 %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Поле для ввода ключей -->
+                    <div class="mb-4">
+                        <label for="keys_text" class="form-label">
+                            <i class="fas fa-list"></i> Ключи для добавления
+                        </label>
+                        <textarea 
+                            class="form-control" 
+                            id="keys_text" 
+                            name="keys_text" 
+                            rows="15" 
+                            placeholder="Введите ключи по одному на строку:&#10;&#10;KEY1-ABCD-EFGH-IJKL&#10;KEY2-MNOP-QRST-UVWX&#10;KEY3-YZAB-CDEF-GHIJ&#10;...&#10;&#10;Можно вставить сразу много ключей из буфера обмена"
+                            required
+                        ></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle"></i> 
+                            Каждый ключ должен быть на отдельной строке. Пустые строки будут проигнорированы.
+                        </div>
+                    </div>
+
+                    <!-- Кнопки -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                <i class="fas fa-plus"></i> Добавить ключи
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-lg ms-2" onclick="clearForm()">
+                                <i class="fas fa-eraser"></i> Очистить
+                            </button>
+                        </div>
+                        <div>
+                            <a href="{% url 'bot_management:keys_list' %}" class="btn btn-outline-primary">
+                                <i class="fas fa-list"></i> Список ключей
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Результат добавления -->
+<div class="row" id="resultRow" style="display: none;">
+    <div class="col-12">
+        <div class="card shadow mb-4" id="resultCard">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold" id="resultTitle">
+                    <i class="fas fa-check-circle"></i> Результат добавления
+                </h6>
+            </div>
+            <div class="card-body" id="resultBody">
+                <!-- Результат будет вставлен сюда -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">
+                    <i class="fas fa-chart-bar"></i> Статистика ключей
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-primary" id="totalKeys">-</h4>
+                            <small class="text-muted">Всего ключей</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-success" id="activeKeys">-</h4>
+                            <small class="text-muted">Активных</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-warning" id="usedKeys">-</h4>
+                            <small class="text-muted">Использованных</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-info" id="availableKeys">-</h4>
+                        <small class="text-muted">Доступных</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form-control:focus {
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+#keys_text {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.border-end {
+    border-right: 1px solid #e3e6f0 !important;
+}
+
+@media (max-width: 768px) {
+    .border-end {
+        border-right: none !important;
+        border-bottom: 1px solid #e3e6f0 !important;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+    }
+}
+
+.result-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.result-error {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.result-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadStatistics();
+    
+    document.getElementById('addKeysForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        addKeys();
+    });
+});
+
+function addKeys() {
+    const form = document.getElementById('addKeysForm');
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitBtn');
+    const resultRow = document.getElementById('resultRow');
+    
+    // Показываем загрузку
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Добавляем...';
+    submitBtn.disabled = true;
+    
+    fetch('{% url "bot_management:add_keys" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showResult(data);
+        if (data.success) {
+            loadStatistics();
+            form.reset();
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showResult({
+            success: false,
+            message: 'Произошла ошибка при добавлении ключей'
+        });
+    })
+    .finally(() => {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Добавить ключи';
+        submitBtn.disabled = false;
+    });
+}
+
+function showResult(data) {
+    const resultRow = document.getElementById('resultRow');
+    const resultCard = document.getElementById('resultCard');
+    const resultTitle = document.getElementById('resultTitle');
+    const resultBody = document.getElementById('resultBody');
+    
+    // Убираем предыдущие классы
+    resultCard.className = 'card shadow mb-4';
+    resultTitle.className = 'm-0 font-weight-bold';
+    
+    if (data.success) {
+        resultCard.classList.add('result-success');
+        resultTitle.innerHTML = '<i class="fas fa-check-circle"></i> Ключи успешно добавлены';
+        
+        let body = `<div class="alert alert-success">
+            <h5><i class="fas fa-check"></i> ${data.message}</h5>
+        </div>`;
+        
+        if (data.added_count > 0) {
+            body += `<div class="alert alert-info">
+                <i class="fas fa-plus-circle"></i> <strong>Добавлено:</strong> ${data.added_count} ключей
+            </div>`;
+        }
+        
+        if (data.duplicate_count > 0) {
+            body += `<div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> <strong>Дубликатов:</strong> ${data.duplicate_count} ключей (уже существуют)
+            </div>`;
+        }
+        
+        if (data.errors && data.errors.length > 0) {
+            body += `<div class="alert alert-danger">
+                <i class="fas fa-times-circle"></i> <strong>Ошибки:</strong>
+                <ul class="mb-0 mt-2">`;
+            data.errors.forEach(error => {
+                body += `<li>${error}</li>`;
+            });
+            body += `</ul></div>`;
+        }
+        
+        resultBody.innerHTML = body;
+    } else {
+        resultCard.classList.add('result-error');
+        resultTitle.innerHTML = '<i class="fas fa-times-circle"></i> Ошибка добавления ключей';
+        resultBody.innerHTML = `<div class="alert alert-danger">
+            <h5><i class="fas fa-exclamation-triangle"></i> ${data.message}</h5>
+        </div>`;
+    }
+    
+    resultRow.style.display = 'block';
+    resultRow.scrollIntoView({ behavior: 'smooth' });
+}
+
+function clearForm() {
+    document.getElementById('keys_text').value = '';
+    document.getElementById('resultRow').style.display = 'none';
+}
+
+function loadStatistics() {
+    fetch('{% url "bot_management:statistics_api" %}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const keys = data.data.keys;
+            document.getElementById('totalKeys').textContent = keys.total || 0;
+            document.getElementById('activeKeys').textContent = keys.active || 0;
+            document.getElementById('usedKeys').textContent = keys.used || 0;
+            document.getElementById('availableKeys').textContent = keys.available || 0;
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка загрузки статистики:', error);
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

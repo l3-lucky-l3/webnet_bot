@@ -1,0 +1,189 @@
+{% extends 'bot_management/base.html' %}
+{% load static %}
+
+{% block page_title %}Ключи{% endblock %}
+{% block page_subtitle %}Управление ключами подписки{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-key"></i> Список ключей
+                    </h6>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()">
+                            <i class="fas fa-sync-alt"></i> Обновить
+                        </button>
+                        <a href="{% url 'bot_management:add_keys' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus"></i> Добавить ключ
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Фильтры -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <form method="GET" class="d-flex">
+                                <input type="text" class="form-control me-2" name="search" 
+                                       placeholder="Поиск по ключу..." 
+                                       value="{{ search }}">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" onchange="filterByStatus(this.value)">
+                                <option value="">Все статусы</option>
+                                <option value="active" {% if status == 'active' %}selected{% endif %}>Активные</option>
+                                <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Неактивные</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge badge-info">Всего: {{ keys.count }}</span>
+                        </div>
+                    </div>
+
+                    {% if keys %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="keysTable">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Ключ</th>
+                                        <th>Тип подписки</th>
+                                        <th>Активации</th>
+                                        <th>Статус</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for key in keys %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-primary">#{{ key.key_id }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="mr-3">
+                                                    <div class="icon-circle bg-warning">
+                                                        <i class="fas fa-key text-white"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                        {{ key.key_value|truncatechars:20 }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if key.subscription_type == 'month' %}
+                                                <span class="badge badge-info">Месячная</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">Пожизненная</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="text-xs text-muted">
+                                                {{ key.used_activations }} / {{ key.total_activations }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if key.is_active %}
+                                                <span class="badge badge-success">
+                                                    <i class="fas fa-check-circle"></i> Активен
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-danger">
+                                                    <i class="fas fa-times-circle"></i> Неактивен
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'bot_management:edit_key' key.key_id %}" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-edit"></i> Редактировать
+                                                </a>
+                                                <button onclick="deleteKey({{ key.key_id }})" 
+                                                        class="btn btn-danger btn-sm">
+                                                    <i class="fas fa-trash"></i> Удалить
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-key fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Ключи не найдены</h5>
+                            <p class="text-muted">Попробуйте изменить параметры поиска</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterByStatus(status) {
+    const url = new URL(window.location);
+    if (status) {
+        url.searchParams.set('status', status);
+    } else {
+        url.searchParams.delete('status');
+    }
+    window.location.href = url.toString();
+}
+
+function deleteKey(keyId) {
+    if (confirm('Вы уверены, что хотите удалить этот ключ? Это действие необратимо!')) {
+        fetch(`{% url 'bot_management:delete_key' 0 %}`.replace('0', keyId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Ключ успешно удален!');
+                location.reload();
+            } else {
+                alert('Ошибка при удалении: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при удалении ключа');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block submit_buttons_bottom %}
+    {{ block.super }}
+    
+    {% if original.pk %}
+    <div class="submit-row">
+        <div class="submit-row">
+            <a href="{% url 'admin:bot_management_supportchat_delete' original.pk %}" 
+               class="deletelink"
+               onclick="return confirm('Вы уверены, что хотите удалить этот чат поддержки? Все сообщения будут удалены безвозвратно!');">
+                🗑️ Удалить чат полностью
+            </a>
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}

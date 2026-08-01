@@ -1,0 +1,70 @@
+# Файлы для игнорирования в продакшене
+
+# Переменные окружения
+.env
+.env.local
+.env.production
+
+# База данных
+*.db
+*.sqlite3
+production.db
+
+# Логи
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Виртуальное окружение
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Статические файлы
+staticfiles/
+media/
+
+# Бэкапы
+*.sql
+backup_*
+
+# SSL сертификаты
+*.crt
+*.key
+*.pem
+
+# Конфиденциальные данные
+secrets/
+config/
+

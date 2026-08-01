@@ -1,0 +1,38 @@
+[Unit]
+Description=VPN Bot Django Application
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/vpn-bot
+Environment=DJANGO_SETTINGS_MODULE=tg_bot_admin.settings_production
+EnvironmentFile=/var/www/vpn-bot/.env
+ExecStart=/var/www/vpn-bot/venv/bin/gunicorn --config gunicorn.conf.py wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+KillMode=mixed
+TimeoutStopSec=5
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/vpn-bot/logs /var/www/vpn-bot/media /var/www/vpn-bot/staticfiles
+
+# Логирование
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vpn-bot
+
+# Ограничения ресурсов
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
+

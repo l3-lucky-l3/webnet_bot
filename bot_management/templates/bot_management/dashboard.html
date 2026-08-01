@@ -1,0 +1,274 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Дашборд - Админка Telegram бота{% endblock %}
+{% block page_title %}Дашборд{% endblock %}
+{% block page_subtitle %}Обзор системы и быстрые действия{% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <!-- Статистика пользователей -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Всего пользователей
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                        <small class="text-muted">+{{ new_users_today }} сегодня</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика платежей -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Выручка
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_revenue|floatformat:0 }} ₽</div>
+                        <small class="text-muted d-block">{{ succeeded_payments }} оплачено всего</small>
+                        <small class="text-muted">Сегодня: {{ today_revenue|floatformat:0 }} ₽</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-ruble-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Статистика ключей -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Ключи
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ available_keys }}/{{ total_keys }}</div>
+                        <small class="text-muted">доступно/всего</small>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-key fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Ожидающие платежи -->
+    <div class="col-xl-6 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-clock"></i> Ожидающие платежи
+                </h6>
+                <span class="badge bg-warning">{{ pending_payments }}</span>
+            </div>
+            <div class="card-body">
+                {% if recent_payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Пользователь</th>
+                                    <th>Сумма</th>
+                                    <th>Статус</th>
+                                    <th>Дата</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in recent_payments %}
+                                <tr>
+                                    <td>#{{ payment.payment_id }}</td>
+                                    <td>
+                                        {% if payment.user.username %}
+                                            @{{ payment.user.username }}
+                                        {% else %}
+                                            {{ payment.user.first_name }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ payment.amount }} ₽</td>
+                                    <td>
+                                        {% if payment.status == 'pending' %}
+                                            <span class="badge bg-warning">Ожидает</span>
+                                        {% elif payment.status == 'succeeded' %}
+                                            <span class="badge bg-success">Подтвержден</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Отклонен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ payment.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        {% if payment.status == 'pending' %}
+                                            <button class="btn btn-sm btn-success" 
+                                                    onclick="confirmPayment({{ payment.payment_id }})">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" 
+                                                    onclick="rejectPayment({{ payment.payment_id }})">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Нет платежей</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Поддержка -->
+    <div class="col-xl-6 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-comments"></i> Поддержка
+                </h6>
+                <span class="badge bg-info">{{ open_chats }}</span>
+            </div>
+            <div class="card-body">
+                {% if recent_support %}
+                    <div class="list-group list-group-flush">
+                        {% for message in recent_support %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">
+                                    {% if message.chat.user.username %}
+                                        @{{ message.chat.user.username }}
+                                    {% else %}
+                                        {{ message.chat.user.first_name }}
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ message.text|truncatechars:50 }}</small>
+                            </div>
+                            <small class="text-muted">{{ message.sent_at|date:"H:i" }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">Нет сообщений</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Быстрые действия -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-bolt"></i> Быстрые действия
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-primary w-100" onclick="location.href='{% url 'bot_management:broadcast_create' %}'">
+                            <i class="fas fa-bullhorn"></i> Создать рассылку
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-success w-100" onclick="location.href='{% url 'bot_management:add_keys' %}'">
+                            <i class="fas fa-key"></i> Загрузить ключи
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-warning w-100" onclick="location.href='/bot_management/support/'">
+                            <i class="fas fa-comments"></i> Чаты поддержки
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function confirmPayment(paymentId) {
+    if (confirm('Подтвердить платеж?')) {
+        fetch(`/bot_management/payments/${paymentId}/confirm/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function rejectPayment(paymentId) {
+    if (confirm('Отклонить платеж?')) {
+        fetch(`/bot_management/payments/${paymentId}/reject/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Автообновление каждые 30 секунд
+setInterval(() => {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

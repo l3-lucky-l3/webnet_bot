@@ -1,0 +1,223 @@
+{% extends 'bot_management/base.html' %}
+{% load static %}
+
+{% block title %}Обработка запроса на вывод{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Принудительно устанавливаем темный текст для всех элементов */
+    body, html {
+        color: #333 !important;
+    }
+    
+    .container-fluid, .container-fluid * {
+        color: #333 !important;
+    }
+    
+    .card, .card * {
+        color: #333 !important;
+    }
+    
+    .table, .table td, .table th {
+        color: #333 !important;
+    }
+    
+    .card-body, .card-body * {
+        color: #333 !important;
+    }
+    
+    .alert, .alert * {
+        color: #333 !important;
+    }
+    
+    .alert pre {
+        color: #333 !important;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: #333 !important;
+    }
+    
+    p, span, div {
+        color: #333 !important;
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+    
+    /* Badge элементы должны оставаться белыми */
+    .badge {
+        color: #fff !important;
+    }
+    
+    /* Кнопки */
+    .btn {
+        color: #fff !important;
+    }
+    
+    /* Принудительно для всех элементов внутри контента */
+    #content * {
+        color: #333 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Обработка запроса на вывод #{{ withdrawal.id }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Информация о запросе -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Информация о пользователе</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>ID:</strong></td>
+                                    <td>{{ withdrawal.user.user_id }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Username:</strong></td>
+                                    <td>@{{ withdrawal.user.username|default:"N/A" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Имя:</strong></td>
+                                    <td>{{ withdrawal.user.first_name }} {{ withdrawal.user.last_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Реферальный баланс:</strong></td>
+                                    <td>{{ withdrawal.user.referral_balance }} ₽</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Детали запроса</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Сумма:</strong></td>
+                                    <td><strong>{{ withdrawal.amount }} </strong>₽</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Способ выплаты:</strong></td>
+                                    <td>{{ withdrawal.get_payment_method_display }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Статус:</strong></td>
+                                    <td>
+                                    <strong> {% if withdrawal.status == 'pending' %}
+                                            {{ withdrawal.get_status_display }}
+                                        {% elif withdrawal.status == 'approved' %}
+                                            {{ withdrawal.get_status_display }}
+                                        {% elif withdrawal.status == 'completed' %}
+                                            {{ withdrawal.get_status_display }}
+                                        {% elif withdrawal.status == 'rejected' %}
+                                            {{ withdrawal.get_status_display }}
+                                        {% endif %}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Дата создания:</strong></td>
+                                    <td>{{ withdrawal.created_at|date:"d.m.Y H:i" }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Реквизиты -->
+                    <div class="mb-4">
+                        <h5>Реквизиты для выплаты</h5>
+                        <div class="alert alert-info">
+                            <pre style="white-space: pre-wrap; margin: 0;">{{ withdrawal.payment_details }}</pre>
+                        </div>
+                    </div>
+
+                    <!-- История обработки -->
+                    {% if withdrawal.processed_at %}
+                    <div class="mb-4">
+                        <h5>История обработки</h5>
+                        <div class="alert alert-secondary">
+                            <strong>Обработано:</strong> {{ withdrawal.processed_at|date:"d.m.Y H:i" }}<br>
+                            <strong>Администратор:</strong> {{ withdrawal.processed_by.username|default:"Система" }}<br>
+                            {% if withdrawal.admin_comment %}
+                                <strong>Комментарий:</strong> {{ withdrawal.admin_comment }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Форма обработки -->
+                    {% if withdrawal.status == 'pending' %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="admin_comment">Комментарий администратора:</label>
+                            <textarea name="admin_comment" id="admin_comment" class="form-control" rows="3" 
+                                      placeholder="Введите комментарий (необязательно)"></textarea>
+                        </div>
+                        
+                        <div class="btn-group" role="group">
+                            <button type="submit" name="action" value="approve" class="btn btn-success">
+                                <i class="fas fa-check"></i> Одобрить
+                            </button>
+                            <button type="submit" name="action" value="reject" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Отклонить
+                            </button>
+                        </div>
+                    </form>
+                    {% elif withdrawal.status == 'approved' %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="admin_comment">Комментарий о выплате:</label>
+                            <textarea name="admin_comment" id="admin_comment" class="form-control" rows="3" 
+                                      placeholder="Введите комментарий о завершении выплаты"></textarea>
+                        </div>
+                        
+                        <button type="submit" name="action" value="complete" class="btn btn-success">
+                            <i class="fas fa-money-bill-wave"></i> Завершить выплату
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle"></i>
+                        Справка
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6>Статусы запросов:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>В ожидании</strong> - новый запрос</li>
+                        <li><strong>Одобрено</strong> - запрос одобрен, ожидает выплаты</li>
+                        <li><strong>Выплачено</strong> - выплата завершена</li>
+                        <li><strong>Отклонено</strong> - запрос отклонен</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <h6>Действия:</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Одобрить</strong> - разрешить вывод средств</li>
+                        <li><strong>Завершить выплату</strong> - списать средства с баланса</li>
+                        <li><strong>Отклонить</strong> - отклонить запрос</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,118 @@
+{% extends 'bot_management/base.html' %}
+{% load static %}
+
+{% block title %}Поддержка{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-headset"></i> Поддержка
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info">
+                                    <i class="fas fa-comments"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Всего чатов</span>
+                                    <span class="info-box-number">{{ total_chats|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success">
+                                    <i class="fas fa-check-circle"></i>
+                                </span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Открытые чаты</span>
+                                    <span class="info-box-number">{{ open_chats|default:0 }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID чата</th>
+                                    <th>Пользователь</th>
+                                    <th>Статус</th>
+                                    <th>Последнее сообщение</th>
+                                    <th>Дата создания</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for chat in support_chats %}
+                                <tr>
+                                    <td>{{ chat.chat_id }}</td>
+                                    <td>
+                                        <strong>@{{ chat.user.username|default:chat.user.user_id }}</strong>
+                                        <br>
+                                        <small class="text-muted">ID: {{ chat.user.user_id }}</small>
+                                    </td>
+                                    <td>
+                                        {% if chat.status == 'open' %}
+                                            <span class="badge badge-success">Открыт</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Закрыт</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if chat.last_message %}
+                                            <div class="text-truncate" style="max-width: 200px;">
+                                                {{ chat.last_message.text|truncatechars:50 }}
+                                            </div>
+                                            <small class="text-muted">
+                                                {{ chat.last_message.sent_at|date:"d.m.Y H:i" }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">Нет сообщений</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ chat.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'bot_management:support_chat_detail' chat.chat_id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Открыть чат
+                                        </a>
+                                        {% if chat.status == 'open' %}
+                                            <a href="{% url 'bot_management:toggle_support_chat' chat.chat_id %}" 
+                                               class="btn btn-sm btn-warning">
+                                                <i class="fas fa-lock"></i> Закрыть
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'bot_management:toggle_support_chat' chat.chat_id %}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-unlock"></i> Открыть
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted">
+                                        <i class="fas fa-inbox"></i> Нет чатов поддержки
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

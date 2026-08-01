@@ -1,0 +1,313 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <a href="{% url 'admin:index' %}">
+        <i class="fas fa-robot"></i> Telegram Bot Admin
+    </a>
+</h1>
+{% endblock %}
+
+{% block nav-breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Главная</a>
+    {% if title %} &rsaquo; {{ title }}{% endif %}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    /* Импортируем стили из base.html */
+    :root {
+        --primary-color: #4e73df;
+        --secondary-color: #858796;
+        --success-color: #1cc88a;
+        --info-color: #36b9cc;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+        --light-color: #f8f9fc;
+        --dark-color: #5a5c69;
+        --sidebar-bg: #343a40;
+        --sidebar-hover: #495057;
+    }
+
+    body {
+        background-color: #f8f9fc;
+        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    #header {
+        background: linear-gradient(180deg, var(--primary-color) 0%, #2c5aa0 100%);
+        color: white;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        border-bottom: none;
+    }
+
+    #site-name a {
+        color: white;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 1.5rem;
+    }
+
+    #site-name a:hover {
+        color: #e3f2fd;
+    }
+
+    #user-tools {
+        color: white;
+    }
+
+    #user-tools a {
+        color: white;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        transition: all 0.3s ease;
+    }
+
+    #user-tools a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .breadcrumbs {
+        background: white;
+        padding: 1rem 1.5rem;
+        margin: 0;
+        border-bottom: 1px solid #e3e6f0;
+        font-size: 0.875rem;
+    }
+
+    .breadcrumbs a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .breadcrumbs a:hover {
+        color: #2c5aa0;
+        text-decoration: underline;
+    }
+
+    #content {
+        background: #f8f9fc;
+        padding: 2rem;
+        min-height: calc(100vh - 200px);
+    }
+
+    .module {
+        background: white;
+        border: 1px solid #e3e6f0;
+        border-radius: 0.5rem;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        margin-bottom: 1.5rem;
+    }
+
+    .module h2 {
+        background: linear-gradient(180deg, var(--primary-color) 0%, #2c5aa0 100%);
+        color: white;
+        margin: 0;
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem 0.5rem 0 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .module h3 {
+        background: #f8f9fc;
+        color: var(--dark-color);
+        margin: 0;
+        padding: 0.75rem 1.5rem;
+        border-bottom: 1px solid #e3e6f0;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .module table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .module th {
+        background: #f8f9fc;
+        color: var(--dark-color);
+        padding: 0.75rem 1rem;
+        text-align: left;
+        font-weight: 600;
+        border-bottom: 1px solid #e3e6f0;
+    }
+
+    .module td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .module tr:hover {
+        background-color: #f8f9fc;
+    }
+
+    .module a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .module a:hover {
+        color: #2c5aa0;
+        text-decoration: underline;
+    }
+
+    .button, input[type="submit"], input[type="button"] {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .button:hover, input[type="submit"]:hover, input[type="button"]:hover {
+        background: #2c5aa0;
+        transform: translateY(-1px);
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    }
+
+    .button.default {
+        background: var(--secondary-color);
+    }
+
+    .button.default:hover {
+        background: #6c757d;
+    }
+
+    .addlink {
+        background: var(--success-color);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        text-decoration: none;
+        font-weight: 500;
+        display: inline-block;
+        margin-bottom: 1rem;
+    }
+
+    .addlink:hover {
+        background: #17a673;
+        color: white;
+        text-decoration: none;
+    }
+
+    .changelink {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    .changelink:hover {
+        color: #2c5aa0;
+        text-decoration: underline;
+    }
+
+    .deletelink {
+        color: var(--danger-color);
+        text-decoration: none;
+    }
+
+    .deletelink:hover {
+        color: #c0392b;
+        text-decoration: underline;
+    }
+
+    .form-row {
+        margin-bottom: 1rem;
+    }
+
+    .form-row label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--dark-color);
+    }
+
+    .form-row input, .form-row select, .form-row textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #d1d3e2;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+    }
+
+    .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+
+    .help {
+        font-size: 0.75rem;
+        color: var(--secondary-color);
+        margin-top: 0.25rem;
+    }
+
+    .errorlist {
+        color: var(--danger-color);
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+    }
+
+    .success {
+        color: var(--success-color);
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+    }
+
+    .warning {
+        color: #856404;
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+    }
+
+    /* Анимации */
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        #content {
+            padding: 1rem;
+        }
+        
+        .module {
+            margin-bottom: 1rem;
+        }
+        
+        .module h2, .module h3 {
+            padding: 0.75rem 1rem;
+        }
+        
+        .module th, .module td {
+            padding: 0.5rem;
+        }
+    }
+</style>
+{% endblock %}

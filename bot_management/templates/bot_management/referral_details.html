@@ -1,0 +1,401 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Детали реферала - Админка Telegram бота{% endblock %}
+{% block page_title %}Детали реферала{% endblock %}
+{% block page_subtitle %}{{ user.username|default:user.first_name }} (ID: {{ user.user_id }}){% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <!-- Информация о пользователе -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Информация о пользователе</h6>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="icon-circle bg-primary mx-auto mb-3" style="width: 60px; height: 60px;">
+                        <i class="fas fa-user text-white" style="font-size: 24px;"></i>
+                    </div>
+                    <h5 class="font-weight-bold">
+                        {% if user.username %}
+                            @{{ user.username }}
+                        {% else %}
+                            {{ user.first_name }} {{ user.last_name }}
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted mb-0">ID: {{ user.user_id }}</p>
+                </div>
+                
+                <hr>
+                
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h4 text-primary">{{ total_referrals }}</div>
+                        <div class="text-xs text-muted">Рефералов</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h4 text-success">{{ total_rewards }} ₽</div>
+                        <div class="text-xs text-muted">Заработано</div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <div class="h5 text-warning">{{ pending_rewards }}</div>
+                    <div class="text-xs text-muted">Ожидает выплаты</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Реферальный код -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Реферальный код</h6>
+                {% if referral_code %}
+                    <button class="btn btn-sm btn-outline-primary" onclick="toggleReferralCode({{ user.user_id }})">
+                        <i class="fas fa-power-off"></i> 
+                        {% if referral_code.is_active %}
+                            Деактивировать
+                        {% else %}
+                            Активировать
+                        {% endif %}
+                    </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if referral_code %}
+                    <div class="text-center">
+                        <h3 class="font-weight-bold text-primary mb-3">
+                            {{ referral_code.code }}
+                        </h3>
+                        <p class="text-muted mb-3">
+                            Поделитесь этой ссылкой с друзьями:
+                        </p>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" id="referralLink" 
+                                   value="https://t.me/webnetvpn_robot?start={{ referral_code.code }}" readonly>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyReferralLink()">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="text-xs text-muted">
+                            Создан: {{ referral_code.created_at|date:"d.m.Y H:i" }}
+                        </div>
+                        <div class="mt-2">
+                            {% if referral_code.is_active %}
+                                <span class="badge badge-success">
+                                    <i class="fas fa-check-circle"></i> Активен
+                                </span>
+                            {% else %}
+                                <span class="badge badge-danger">
+                                    <i class="fas fa-times-circle"></i> Неактивен
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                        <p>Реферальный код не создан</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Рефералы пользователя -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Приглашенные пользователи</h6>
+            </div>
+            <div class="card-body">
+                {% if referrals %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Пользователь</th>
+                                    <th>Дата приглашения</th>
+                                    <th>Статус</th>
+                                    <th>Покупки</th>
+                                    <th>Награды</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for referral in referrals %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-3">
+                                                <div class="icon-circle bg-success">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                    {% if referral.referred.username %}
+                                                        @{{ referral.referred.username }}
+                                                    {% else %}
+                                                        {{ referral.referred.first_name }} {{ referral.referred.last_name }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-xs text-muted">
+                                                    ID: {{ referral.referred.user_id }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-xs">
+                                            {{ referral.created_at|date:"d.m.Y" }}
+                                        </div>
+                                        <div class="text-xs text-muted">
+                                            {{ referral.created_at|date:"H:i" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if referral.is_active %}
+                                            <span class="badge badge-success">Активен</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Неактивен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {{ referral.referred.payments.count }} покупок
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% with referral.rewards.all as rewards %}
+                                            {% if rewards %}
+                                                {% for reward in rewards %}
+                                                    <div class="text-xs">
+                                                        <span class="badge 
+                                                            {% if reward.status == 'paid' %}badge-success
+                                                            {% elif reward.status == 'pending' %}badge-warning
+                                                            {% else %}badge-danger{% endif %}">
+                                                            {{ reward.reward_value }} ₽
+                                                        </span>
+                                                        <span class="text-muted">
+                                                            ({{ reward.get_status_display }})
+                                                        </span>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted">Нет наград</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-users fa-2x mb-3"></i>
+                        <p>Пользователь еще не пригласил никого</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- История наград -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">История наград</h6>
+            </div>
+            <div class="card-body">
+                {% if rewards %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Реферал</th>
+                                    <th>Тип награды</th>
+                                    <th>Размер</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for reward in rewards %}
+                                <tr>
+                                    <td>
+                                        <div class="text-xs">
+                                            {{ reward.created_at|date:"d.m.Y" }}
+                                        </div>
+                                        <div class="text-xs text-muted">
+                                            {{ reward.created_at|date:"H:i" }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="text-xs font-weight-bold">
+                                            {% if reward.referral.referred.username %}
+                                                @{{ reward.referral.referred.username }}
+                                            {% else %}
+                                                {{ reward.referral.referred.first_name }}
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-xs text-muted">
+                                            ID: {{ reward.referral.referred.user_id }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">
+                                            {{ reward.get_reward_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-success">
+                                            {{ reward.reward_value }} ₽
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if reward.status == 'paid' %}
+                                            <span class="badge badge-success">
+                                                <i class="fas fa-check"></i> Выплачено
+                                            </span>
+                                            {% if reward.paid_at %}
+                                                <div class="text-xs text-muted">
+                                                    {{ reward.paid_at|date:"d.m.Y H:i" }}
+                                                </div>
+                                            {% endif %}
+                                        {% elif reward.status == 'pending' %}
+                                            <span class="badge badge-warning">
+                                                <i class="fas fa-clock"></i> Ожидает
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-danger">
+                                                <i class="fas fa-times"></i> Отменено
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if reward.status == 'pending' %}
+                                            <button class="btn btn-sm btn-success" 
+                                                    onclick="payReward({{ reward.id }})">
+                                                <i class="fas fa-money-bill-wave"></i> Выплатить
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="fas fa-gift fa-2x mb-3"></i>
+                        <p>Награды не найдены</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyReferralLink() {
+    const input = document.getElementById('referralLink');
+    input.select();
+    document.execCommand('copy');
+    
+    // Показать уведомление
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> Скопировано';
+    button.classList.remove('btn-outline-secondary');
+    button.classList.add('btn-success');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function toggleReferralCode(userId) {
+    if (confirm('Вы уверены, что хотите изменить статус реферального кода?')) {
+        fetch(`/bot_management/referral/toggle/${userId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при изменении статуса');
+        });
+    }
+}
+
+function payReward(rewardId) {
+    if (confirm('Вы уверены, что хотите выплатить эту награду?')) {
+        fetch(`/bot_management/referral/pay/${rewardId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при выплате награды');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

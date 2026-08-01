@@ -1,0 +1,247 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Тикет {{ chat.ticket_number|default:"T000000" }} - Админка Telegram бота{% endblock %}
+{% block page_title %}Тикет {{ chat.ticket_number|default:"T000000" }}{% endblock %}
+{% block page_subtitle %}Общение с пользователем{% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-comments"></i> 
+                    {% if chat.user.username %}
+                        @{{ chat.user.username }}
+                    {% else %}
+                        {{ chat.user.first_name }} {{ chat.user.last_name }}
+                    {% endif %}
+                    {% if chat.unread_admin_messages > 0 %}
+                        <span class="badge bg-danger ms-2">
+                            <i class="fas fa-exclamation-circle"></i> {{ chat.unread_admin_messages }} непрочитанных
+                        </span>
+                    {% endif %}
+                </h6>
+                <div>
+                    {% if chat.status == 'open' %}
+                        <span class="badge bg-success">Открыт</span>
+                    {% else %}
+                        <span class="badge bg-danger">Закрыт</span>
+                    {% endif %}
+                    <a href="{% url 'bot_management:support_chat_list' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-arrow-left"></i> Назад к списку
+                    </a>
+                    <button type="button" class="btn btn-sm btn-danger ms-2" onclick="deleteChat({{ chat.chat_id }})">
+                        <i class="fas fa-trash"></i> Удалить чат
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Информация о пользователе -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Информация о пользователе:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>ID:</strong> {{ chat.user.user_id }}</li>
+                            <li><strong>Имя:</strong> {{ chat.user.first_name }} {{ chat.user.last_name }}</li>
+                            <li><strong>Username:</strong> @{{ chat.user.username|default:"не указан" }}</li>
+                            <li><strong>Регистрация:</strong> {{ chat.user.created_at|date:"d.m.Y H:i" }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Информация о чате:</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Статус:</strong> 
+                                {% if chat.status == 'open' %}
+                                    <span class="badge bg-success">Открыт</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Закрыт</span>
+                                {% endif %}
+                            </li>
+                            <li><strong>Создан:</strong> {{ chat.created_at|date:"d.m.Y H:i" }}</li>
+                            <li><strong>Сообщений:</strong> {{ messages.count }}</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Сообщения -->
+                <div class="chat-messages" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px;">
+                    {% for message in messages %}
+                    <div class="message mb-3 {% if message.sender == 'admin' %}text-end{% endif %}">
+                        <div class="d-flex {% if message.sender == 'admin' %}justify-content-end{% endif %}">
+                            <div class="message-content {% if message.sender == 'admin' %}bg-primary text-white{% else %}bg-light{% endif %} p-3 rounded" style="max-width: 70%;">
+                                <!-- Фотография -->
+                                {% if message.has_photo %}
+                                    <div class="mb-2">
+                                        <img src="{{ message.get_photo_url }}" 
+                                             alt="Фото от {{ message.get_sender_display }}" 
+                                             class="img-fluid rounded" 
+                                             style="max-width: 300px; max-height: 300px; cursor: pointer;"
+                                             onclick="openImageModal('{{ message.get_photo_url }}')"
+                                             onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuKXpCDQv9C+0LrQsCDQv9GA0L7QsdC10LvQtdC90LjQtTwvdGV4dD48L3N2Zz4='; this.style.border='1px solid #ddd'; this.style.backgroundColor='#f8f9fa';">
+                                        <div class="text-muted small mt-1">
+                                            <i class="fas fa-image"></i> 
+                                            <a href="{{ message.get_photo_url }}" target="_blank" class="text-decoration-none">
+                                                Открыть в новой вкладке
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Текст сообщения -->
+                                <div class="message-text">{{ message.text|linebreaks }}</div>
+                                
+                                <!-- Метаинформация -->
+                                <small class="text-muted">
+                                    {{ message.sent_at|date:"d.m.Y H:i" }}
+                                    {% if message.sender == 'admin' %}
+                                        <i class="fas fa-user-shield"></i> Админ
+                                    {% else %}
+                                        <i class="fas fa-user"></i> Пользователь
+                                    {% endif %}
+                                    {% if message.has_photo %}
+                                        <i class="fas fa-image"></i> 📸
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted text-center">Нет сообщений</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Форма ответа -->
+                {% if chat.status == 'open' %}
+                <div class="mt-4">
+                    <h6>Ответить пользователю:</h6>
+                    <form id="replyForm">
+                        <div class="mb-3">
+                            <textarea class="form-control" id="messageText" rows="3" placeholder="Введите ваш ответ..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Отправить ответ
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Модальное окно для просмотра фотографий -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imageModalLabel">Просмотр фотографии</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Фотография" class="img-fluid">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                <a id="downloadLink" href="" download class="btn btn-primary">
+                    <i class="fas fa-download"></i> Скачать
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.getElementById('replyForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const messageText = document.getElementById('messageText').value.trim();
+    if (!messageText) {
+        alert('Введите текст сообщения');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('chat_id', {{ chat.chat_id }});
+    formData.append('message', messageText);
+    formData.append('csrfmiddlewaretoken', getCookie('csrftoken'));
+    
+    fetch(`{% url 'bot_management:send_support_message' %}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при отправке сообщения');
+    });
+});
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Функция удаления чата
+function deleteChat(chatId) {
+    if (confirm('Вы уверены, что хотите удалить этот чат поддержки? Все сообщения будут удалены безвозвратно!')) {
+        fetch(`/bot_management/support/${chatId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Чат успешно удален!');
+                window.location.href = '{% url "bot_management:support_chat_list" %}';
+            } else {
+                alert('Ошибка при удалении чата: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при удалении чата');
+        });
+    }
+}
+
+// Автообновление каждые 10 секунд
+setInterval(() => {
+    location.reload();
+}, 10000);
+
+// Функция для открытия модального окна с фотографией
+function openImageModal(imageUrl) {
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    const modalImage = document.getElementById('modalImage');
+    const downloadLink = document.getElementById('downloadLink');
+    
+    modalImage.src = imageUrl;
+    downloadLink.href = imageUrl;
+    
+    modal.show();
+}
+</script>
+{% endblock %}

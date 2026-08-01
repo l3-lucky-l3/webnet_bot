@@ -1,0 +1,516 @@
+{% extends 'bot_management/base.html' %}
+
+{% block title %}Управление реферальной системой - Админка Telegram бота{% endblock %}
+{% block page_title %}Управление реферальной системой{% endblock %}
+{% block page_subtitle %}Статистика и управление рефералами{% endblock %}
+
+{% block content %}
+<div class="row fade-in">
+    <!-- Статистика -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Всего рефералов
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_referrals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Активных
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_referrals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                             Сумма реферальных начислений 
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_rewards }} ₽</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-ruble-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Дополнительные карточки -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Общий реферальный баланс
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_referral_balance }} ₽</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-wallet fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Пользователей с реферальным балансом
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ users_with_referral_balance }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика заявок на вывод -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="text-primary mb-3">
+            <i class="fas fa-money-bill-wave"></i> Заявки на вывод средств
+        </h5>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            В ожидании
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pending_withdrawals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-clock fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Одобрено
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ approved_withdrawals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Выплачено
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ completed_withdrawals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Отклонено
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ rejected_withdrawals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-times-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-6 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Всего заявок
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_withdrawals }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-list fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Общая сумма
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_withdrawal_amount }} ₽</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-ruble-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <!-- Действия -->
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Быстрые действия</h6>
+            </div>
+            <div class="card-body">
+                <button class="btn btn-info btn-icon-split" onclick="refreshStats()">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-sync-alt"></i>
+                    </span>
+                    <span class="text">Обновить статистику</span>
+                </button>
+                
+                <a href="{% url 'bot_management:withdrawal_management' %}" class="btn btn-success btn-icon-split ml-2">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </span>
+                    <span class="text">Управление выводами</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Топ рефереров -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Топ рефереров</h6>
+            </div>
+            <div class="card-body">
+                {% if top_referrers %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Пользователь</th>
+                                    <th>Рефералов</th>
+                                    <th>Заработано</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in top_referrers %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="mr-3">
+                                                <div class="icon-circle bg-primary">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                    {% if user.username %}
+                                                        @{{ user.username }}
+                                                    {% else %}
+                                                        {{ user.first_name }} {{ user.last_name }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="text-xs text-muted">
+                                                    ID: {{ user.user_id }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-primary">{{ user.referrals_count }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-success">{{ user.total_rewards|default:0 }} ₽</span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'bot_management:referral_details' user.user_id %}" 
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fas fa-eye"></i> Детали
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Нет данных о реферерах</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика за период -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">За последние 30 дней</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-primary">{{ recent_referrals_30_days }}</div>
+                            <div class="text-xs text-muted">Новых рефералов</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <div class="h4 text-success">{{ recent_rewards_30_days }} ₽</div>
+                            <div class="text-xs text-muted">Выплачено наград</div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <div class="h5 text-warning">
+                        {% if average_reward > 0 %}
+                            {{ average_reward|floatformat:2 }} ₽
+                        {% else %}
+                            0 ₽
+                        {% endif %}
+                    </div>
+                    <div class="text-xs text-muted">Средняя награда</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Настройки реферальной системы -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Настройки реферальной системы</h6>
+            </div>
+            <div class="card-body">
+                <form id="referralSettingsForm">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="reward_percent" class="font-weight-bold">Процент награды</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="reward_percent" 
+                                           value="10" min="1" max="100">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Процент от покупки реферала
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="min_purchase" class="font-weight-bold">Минимальная покупка</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="min_purchase" 
+                                           value="100" min="0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">₽</span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    Минимальная сумма для начисления награды
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="max_rewards" class="font-weight-bold">Максимум наград</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="max_rewards" 
+                                           value="0" min="0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text">₽</span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    0 = без ограничений
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Сохранить настройки
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    </div>
+</div>
+
+<!-- Недавние заявки на вывод -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Недавние заявки на вывод</h6>
+                <a href="{% url 'bot_management:withdrawal_management' %}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye"></i> Все заявки
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_withdrawals %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Пользователь</th>
+                                    <th>Сумма</th>
+                                    <th>Способ</th>
+                                    <th>Статус</th>
+                                    <th>Дата</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for withdrawal in recent_withdrawals %}
+                                <tr>
+                                    <td>{{ withdrawal.id }}</td>
+                                    <td>
+                                        <strong>@{{ withdrawal.user.username|default:"N/A" }}</strong><br>
+                                        <small class="text-muted">ID: {{ withdrawal.user.user_id }}</small>
+                                    </td>
+                                    <td><strong>{{ withdrawal.amount }} ₽</strong></td>
+                                    <td>{{ withdrawal.get_payment_method_display }}</td>
+                                    <td>
+                                        {% if withdrawal.status == 'pending' %}
+                                            <span class="badge badge-warning">В ожидании</span>
+                                        {% elif withdrawal.status == 'approved' %}
+                                            <span class="badge badge-info">Одобрено</span>
+                                        {% elif withdrawal.status == 'completed' %}
+                                            <span class="badge badge-success">Выплачено</span>
+                                        {% elif withdrawal.status == 'rejected' %}
+                                            <span class="badge badge-danger">Отклонено</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ withdrawal.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        <a href="{% url 'bot_management:process_withdrawal' withdrawal.id %}" 
+                                           class="btn btn-sm btn-primary" title="Обработать">
+                                            <i class="fas fa-cog"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Нет заявок на вывод</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshStats() {
+    location.reload();
+}
+
+function exportReferrals() {
+    // Здесь можно добавить функциональность экспорта
+    alert('Функция экспорта будет добавлена в следующей версии');
+}
+
+// Сохранение настроек
+document.getElementById('referralSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const settings = {
+        reward_percent: document.getElementById('reward_percent').value,
+        min_purchase: document.getElementById('min_purchase').value,
+        max_rewards: document.getElementById('max_rewards').value
+    };
+    
+    // Здесь можно добавить AJAX запрос для сохранения настроек
+    alert('Настройки сохранены! (Функция будет реализована)');
+});
+
+// Автообновление каждые 30 секунд
+setInterval(function() {
+    // Можно добавить AJAX обновление статистики
+}, 30000);
+</script>
+{% endblock %}
