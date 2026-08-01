@@ -1,7 +1,9 @@
+import os
 import sqlite3
 from contextlib import contextmanager
 
-DB_NAME = "tg_key_bot.db"
+# Путь к базе данных из переменной окружения или по умолчанию
+DB_NAME = os.getenv("DB_PATH", "tg_key_bot.db")
 
 def init_db():
     # Оптимизация SQLite для лучшей производительности

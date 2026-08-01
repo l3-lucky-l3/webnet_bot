@@ -1,60 +1,71 @@
 ```
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# Environment files
+.env
+.env.local
+*.env.*
 
-# Database
-*.db
-*.db-journal
+# Docker related (if applicable)
+.dockerenv
+!Dockerfile
+!docker-compose.yml
+!bot.env.example
 
 # Logs
 *.log
 
-# Environment
-.env
-.env.local
-.env.*
-.env~*
-.venv/
-venv/
-ENV/
-
-# Backup files
-*.backup
-*.bak
-*~
-
 # Temporary files
 *.tmp
-*.temp
+*.swp
+*.swo
+
+# OS generated files
 .DS_Store
 Thumbs.db
 
-# Scripts and executables
-*.sh~
-*.bat~
-*.py~
+# Dependencies (if any detected)
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.egg-info/
 
-# Configuration backups
-*.cfg~
-*.conf~
-*.config~
+# Build artifacts (if any detected)
+dist/
+build/
+target/
+*.pyc
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```
