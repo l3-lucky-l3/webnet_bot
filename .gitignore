@@ -1,8 +1,60 @@
-/venv
-/__pycache__
+```
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
+# Database
+*.db
+*.db-journal
+
+# Logs
+*.log
+
+# Environment
 .env
-*.sql
+.env.local
+.env.*
+.env~*
+.venv/
+venv/
+ENV/
+
+# Backup files
+*.backup
 *.bak
-*.corrupt
-*.corrupted
+*~
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Scripts and executables
+*.sh~
+*.bat~
+*.py~
+
+# Configuration backups
+*.cfg~
+*.conf~
+*.config~
+```
