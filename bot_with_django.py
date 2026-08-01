@@ -78,17 +78,24 @@ try:
     )
     from config import DJANGO_API_URL, CRYPTOBOT_API_TOKEN
     
-    # Проверяем доступность Django API
+    # Запускаем проверку с повторными попытками
     import aiohttp
     
-    async def check_django_api():
-        """Проверка доступности Django API"""
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"{DJANGO_API_URL}/bot_management/api/health/", timeout=2) as response:
-                    return response.status == 200
-        except:
-            return False
+    async def check_django_api(max_retries=5, delay=2):
+        """Проверка доступности Django API с повторными попытками"""
+        for attempt in range(max_retries):
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(f"{DJANGO_API_URL}/bot_management/api/health/", timeout=2) as response:
+                        if response.status == 200:
+                            return True
+            except Exception as e:
+                logging.info(f"Попытка {attempt + 1}/{max_retries}: Django API ещё не доступен ({e})")
+            
+            if attempt < max_retries - 1:
+                await asyncio.sleep(delay)
+        
+        return False
     
     # Запускаем проверку
     loop = asyncio.new_event_loop()

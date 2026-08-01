@@ -40,5 +40,8 @@ ENV PYTHONUNBUFFERED=1
 # Порт для Django админки
 EXPOSE 8123
 
+# Переменные окружения для доступа внутри контейнера
+ENV DJANGO_API_URL=http://127.0.0.1:8123
+
 # Команда запуска
 CMD ["python", "run_bot_with_django.py"]
