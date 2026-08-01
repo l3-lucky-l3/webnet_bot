@@ -2,7 +2,11 @@
 
 services:
   bot:
-    build: .
+    build:
+      context: .
+      args:
+        - HTTP_PROXY=http://127.0.0.1:10809
+        - HTTPS_PROXY=http://127.0.0.1:10809
     container_name: telegram-vpn-bot
     restart: unless-stopped
     volumes:
@@ -15,6 +19,12 @@ services:
     environment:
       - DB_PATH=/app/data/tg_key_bot.db
       - PYTHONUNBUFFERED=1
+      # Прокси для runtime (если нужен доступ к внешним API)
+      - HTTP_PROXY=http://host.docker.internal:10809
+      - HTTPS_PROXY=http://host.docker.internal:10809
+      - NO_PROXY=localhost,127.0.0.1,deb.debian.org,security.debian.org
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8123:8123"  # Django админка
     networks:

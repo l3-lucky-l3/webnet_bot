@@ -2,10 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Игнорируем системные прокси внутри контейнера
-ENV HTTP_PROXY=""
-ENV HTTPS_PROXY=""
-ENV NO_PROXY="deb.debian.org,security.debian.org"
+# Настройки прокси для сборки (apt и pip)
+ARG HTTP_PROXY=http://127.0.0.1:10809
+ARG HTTPS_PROXY=http://127.0.0.1:10809
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+ENV NO_PROXY="localhost,127.0.0.1,deb.debian.org,security.debian.org"
 
 # Устанавливаем только необходимые пакеты (без gcc и libpq-dev, так как используем SQLite)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,8 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Копирование файлов зависимостей
 COPY requirements.txt .
 
-# Установка Python-зависимостей
-RUN pip install --no-cache-dir -r requirements.txt
+# Установка Python-зависимостей через прокси
+RUN pip install --no-cache-dir \
+    --proxy http://127.0.0.1:10809 \
+    -r requirements.txt
 
 # Копирование всего проекта
 COPY . .
