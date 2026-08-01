@@ -7,10 +7,10 @@ services:
     container_name: telegram-vpn-bot
     restart: unless-stopped
     volumes:
-      # Сохранение базы данных вне контейнера
-      - bot_data:/app/data
+      # Монтирование базы данных напрямую из папки проекта
+      - ./data:/app/data
       # Логи (опционально)
-      - bot_logs:/app/logs
+      - ./logs:/app/logs
       # Монтирование .env файла с секретами
       - ./bot.env:/app/.env:ro
     environment:
@@ -20,12 +20,6 @@ services:
       - "8123:8123"  # Django админка
     networks:
       - bot_network
-
-volumes:
-  bot_data:
-    name: telegram-bot-data
-  bot_logs:
-    name: telegram-bot-logs
 
 networks:
   bot_network:
