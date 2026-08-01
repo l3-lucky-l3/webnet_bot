@@ -1,36 +1,30 @@
 # Docker Compose для Telegram VPN бота
-
 services:
-  bot:
-    build:
-      context: .
-      args:
-        - HTTP_PROXY=http://127.0.0.1:10809
-        - HTTPS_PROXY=http://127.0.0.1:10809
-        - http_proxy=http://127.0.0.1:10809
-        - https_proxy=http://127.0.0.1:10809
+  # 1. Сервис для применения миграций (запускается первым и умирает)
+  migrate:
+    build: .
+    command: python manage.py migrate --noinput
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    networks:
+      - bot_network
+
+  # 2. Основной сервис бота
+  telegram-vpn-bot:
+    build: .
     container_name: telegram-vpn-bot
     restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      # Монтирование базы данных напрямую из папки проекта
-      - ./data:/app/data
-      # Логи (опционально)
-      - ./logs:/app/logs
-      # Монтирование .env файла с секретами
-      - ./bot.env:/app/.env:ro
-    environment:
-      - DB_PATH=/app/data/tg_key_bot.db
-      - PYTHONUNBUFFERED=1
-      # Прокси для runtime (если нужен доступ к внешним API)
-      - HTTP_PROXY=http://host.docker.internal:10809
-      - HTTPS_PROXY=http://host.docker.internal:10809
-      - NO_PROXY=localhost,127.0.0.1,deb.debian.org,security.debian.org
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    command: python run_bot_with_django.py
     ports:
-      - "8123:8123"  # Django админка
+      - "8123:8123"
+      - "8023:8023"
+    volumes:
+      - .:/app
+      - ./data:/app/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     networks:
       - bot_network
 
