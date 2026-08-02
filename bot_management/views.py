@@ -1268,6 +1268,7 @@ def set_user_entry_method(request):
 
 
 # Дополнительные функции для совместимости с URL
+@method_decorator(csrf_exempt, name='dispatch')
 class BotWebhookView(View):
     """Универсальный Webhook для всех платежных систем (Platega, Antilopay и др.)"""
     def post(self, request):
