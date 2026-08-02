@@ -1092,42 +1092,69 @@ class PaymentService:
 
             expires_date = payment.subscription_expires_at.strftime('%d.%m.%Y') if payment.subscription_expires_at else '—'
 
-            import json
-            keyboard_buttons = [
-                [{"text": "🚀 Открыть ключ Обычный VPN", "url": key_value}],
-                [{"text": "⬅️ Главное меню", "callback_data": "main_menu"}],
-            ]
-            keyboard = {"inline_keyboard": keyboard_buttons}
+            message = f"""✅ Оплата подтверждена!
 
-            message = f"""✅ <b>Оплата подтверждена!</b>
-
-🚀 <b>Обычный VPN - Ключ активирован</b>
+🚀 Обычный VPN - Ключ активирован
 
 🔑 Ваш ключ доступа:
 {key_value}
 
-📅 <b>Действует до:</b> {expires_date}
+📅 Действует до: {expires_date}
 
-🔑 <b>Как подключить устройство?</b>
+📲Установка и настройка
 
-📲 Настройка:
-1. Переходим по выданной ссылке
-2. Выбираем клиент (Рекомендую Happ) и скачиваем его (если еще не скачан)
-3. Нажимаем кнопку "Добавить подписку"
-4. Готово!
+Мы рекомендуем это приложение👇
+INCY (https://incy.cc/) : https://incy.cc/
 
-⚠️ <b>Условия использования</b>
-· Доступ на 1 устройство
+🙏УСТАНОВКА
+1.Скачиваем приложение INCY (https://incy.cc/) ( есть в AppStore и PlayMarket)
+2. Нажимаем ( +Добавить )
+3. Вставляем ссылку ключа
+ 
+ГОТОВО✅
 
-🔧 <b>Решение небольших проблем:</b>
-· Обновить конфигурацию (кнопка в правом верхнем углу)
-· Запустить проверку пинга (кнопка рядом с 3 точками)
+⚠️Условия использования
+
+· Доступ на 3 устройства
+· При нарушении правил — бан без возврата средств
+
+🌐Выбор сервера от ГЛУШИЛОК:
+
+· При глушении связи — выбирайте сервер с припиской ОБХОД БЕЛЫХ СПИСКОВ
+
+❗️ОБЯЗАТЕЛЬНО ВЫКЛЮЧАЙТЕ WI-FI если хотите чтобы обход заработал ✅
+
+· Если интернет не глушат — используйте обычный VPN
+
+🔒Безопасность:
+
+· Не передавайте свой личный ключ третьим лицам
+· При нарушении этого правила доступ может быть заблокирован без возможности возврата средств
+
+⚙️Решение небольших проблем:
+
+· Обновить конфигурацию ( кнопка правее названия "WebNet" )
+· Запустить проверку пинга ( кнопка молнии, рядом с обновлением )
 · Перезапустить приложение
-· Включить/выключить VPN
+· Включить/выключить VPN"""
 
-<i>Спасибо за покупку! 🚀</i>"""
+            import json
+            keyboard = {
+                "inline_keyboard": [
+                    [{"text": "📲 Настройка (INCY)", "url": "https://incy.cc/"}],
+                    [{"text": "🔑 Мои ключи", "callback_data": "my_keys"}],
+                    [{"text": "📞 Поддержка", "callback_data": "support"}]
+                ]
+            }
 
-            self._send_telegram_message_sync(payment.user.user_id, message)
+            from config import BOT_TOKEN
+            import requests as req
+            req.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={
+                'chat_id': payment.user.user_id,
+                'text': message,
+                'reply_markup': json.dumps(keyboard)
+            }, timeout=5)
+            
             logger.info(f"Уведомление Обычный VPN отправлено пользователю {payment.user.user_id}")
 
         except Exception as e:
