@@ -18,28 +18,12 @@ logger = logging.getLogger(__name__)
 DEFAULT_IMAGE_PATH = "images/hellonightvpn.png"
 
 # Тексты для выдачи ключа — всего 2 сообщения (при наличии ключей)
-KEY_DELIVERY_MESSAGE_1 = """🎉 <b>Оплата подтверждена!</b>
-
-✅ <b>Подписка ОБХОД глушилок + VPN активирована</b>
-
-🔑 <b>Ваш ключ:</b>
-{issued_key}
-
-📅 <b>Действует до:</b> {expiry_date}
-
-<b>🔧 Как подключить?</b>
-1. Нажмите кнопку ниже чтобы открыть ключ
-2. Выберите приложение для подключения РЕКОМЕНДУЕМ INCY
-3. Нажмите «Добавить подписку»
-
-<i>Спасибо за покупку! 🚀</i>"""
-
-KEY_DELIVERY_MESSAGE_2 = """📲Установка и настройка
+KEY_DELIVERY_MESSAGE_1 = """📲<b>Установка и настройка</b>
 
 Мы рекомендуем это приложение👇
 <a href="https://incy.cc/">INCY</a> : https://incy.cc/
 
-🙏УСТАНОВКА
+🙏<b>УСТАНОВКА</b>
 1.Скачиваем приложение <a href="https://incy.cc/">INCY</a> ( есть в AppStore и PlayMarket)
 2. Нажимаем ( +Добавить )
 3. Вставляем ссылку ключа
@@ -51,12 +35,8 @@ KEY_DELIVERY_MESSAGE_2 = """📲Установка и настройка
 · Доступ на 3 устройства
 · При нарушении правил — бан без возврата средств
 
-🌐<b>Выбор сервера от ГЛУШИЛОК:</b>
+❗️<b>ОБЯЗАТЕЛЬНО ВЫКЛЮЧАЙТЕ WI-FI если хотите чтобы обход заработал ✅</b>
 
-· При глушении связи — выбирайте сервер с припиской <b>ОБХОД БЕЛЫХ СПИСКОВ
-
-</b>❗️<b>ОБЯЗАТЕЛЬНО ВЫКЛЮЧАЙТЕ WI-FI если хотите чтобы обход заработал ✅</b><b>
-</b>
 · Если интернет не глушат — используйте обычный VPN
 
 🔒<b>Безопасность:</b>
@@ -66,10 +46,21 @@ KEY_DELIVERY_MESSAGE_2 = """📲Установка и настройка
 
 ⚙️<b>Решение небольших проблем</b>:
 
-· Обновить конфигурацию ( кнопка правее названия “WebNet” )
+· Обновить конфигурацию ( кнопка правее названия "WebNet" )
 · Запустить проверку пинга ( кнопка молнии, рядом с обновлением )
 · Перезапустить приложение
 · Включить/выключить VPN"""
+
+
+KEY_DELIVERY_MESSAGE_2 = """✅ <b>Оплата подтверждена!</b>
+
+🚀 Обычный VPN - Ключ активирован
+
+🔑 <b>Ваш ключ доступа:</b>
+{issued_key}
+
+📅 <b>Действует до:</b> {expiry_date}"""
+
 
 
 class PaymentService:
@@ -1173,26 +1164,20 @@ INCY (https://incy.cc/) : https://incy.cc/
                  InlineKeyboardButton(text="💬 Написать менеджеру", url="https://t.me/yamalube61")]
             ])
 
-            # Сообщение 1: подтверждение + ключ + полная инструкция + кнопки (ключ экранируем для HTML)
-            expiry_date = payment.subscription_expires_at.strftime('%d.%m.%Y %H:%M') if payment.subscription_expires_at else '—'
-            text1 = KEY_DELIVERY_MESSAGE_1.format(issued_key=html.escape(key.key_value), expiry_date=expiry_date)
-            await self.bot.send_message(payment.user.user_id, text1, parse_mode="HTML", reply_markup=keyboard)
+            # Сообщение 1: инструкция (без ключа)
+            await self.bot.send_message(payment.user.user_id, KEY_DELIVERY_MESSAGE_1, parse_mode="HTML")
             await asyncio.sleep(2)
 
-            # Сообщение 2: фото с инструкцией
-            photo_path = Path("images/instruction.jpg")
-            if photo_path.exists():
-                await self.bot.send_photo(payment.user.user_id, FSInputFile(photo_path), caption=KEY_DELIVERY_MESSAGE_2, parse_mode="HTML")
-                await asyncio.sleep(1)
-
-            else:
-                await self.bot.send_message(payment.user.user_id, KEY_DELIVERY_MESSAGE_2, parse_mode="HTML", reply_markup=keyboard)
+            # Сообщение 2: подтверждение + ключ + кнопки
+            expiry_date = payment.subscription_expires_at.strftime('%d.%m.%Y %H:%M') if payment.subscription_expires_at else '—'
+            text2 = KEY_DELIVERY_MESSAGE_2.format(issued_key=html.escape(key.key_value), expiry_date=expiry_date)
+            await self.bot.send_message(payment.user.user_id, text2, parse_mode="HTML", reply_markup=keyboard)
 
         except Exception as e:
             logger.error(f"Ошибка отправки уведомления пользователю {payment.user.user_id}: {e}")
 
     def _notify_user_payment_confirmed_sync(self, payment: Payment, key: SubscriptionKey):
-        """Синхронная версия: 2 сообщения — подтверждение+инструкция, затем 2 фото + кнопки."""
+        """Синхронная версия: 2 сообщения — инструкция, затем подтверждение+ключ+кнопки."""
         try:
             import requests
             import json
@@ -1207,35 +1192,16 @@ INCY (https://incy.cc/) : https://incy.cc/
                 ]]
             }
 
-            # Сообщение 1: подтверждение + ключ + полная инструкция + кнопки (ключ экранируем для HTML)
-            expiry_date = payment.subscription_expires_at.strftime('%d.%m.%Y %H:%M') if payment.subscription_expires_at else '—'
-            text1 = KEY_DELIVERY_MESSAGE_1.format(issued_key=html.escape(key.key_value), expiry_date=expiry_date)
+            # Сообщение 1: инструкция (без ключа)
             url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-            requests.post(url, data={'chat_id': payment.user.user_id, 'text': text1, 'parse_mode': 'HTML', 'reply_markup': json.dumps(keyboard)}, timeout=5)
+            requests.post(url, data={'chat_id': payment.user.user_id, 'text': KEY_DELIVERY_MESSAGE_1, 'parse_mode': 'HTML'}, timeout=5)
             import time
             time.sleep(2)
 
-            # Сообщение 2: фото с инструкцией
-            photo_path = Path("images/instruction.jpg")
-            if photo_path.exists():
-                tg_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto"
-                with open(photo_path, 'rb') as f:
-                    requests.post(tg_url, files={'photo': f}, data={
-                        'chat_id': payment.user.user_id,
-                        'caption': KEY_DELIVERY_MESSAGE_2,
-                        'parse_mode': 'HTML'
-                    }, timeout=10)
-                import time
-                time.sleep(1)
-                msg_url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-
-            else:
-                requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={
-                    'chat_id': payment.user.user_id,
-                    'text': KEY_DELIVERY_MESSAGE_2,
-                    'parse_mode': 'HTML',
-                    'reply_markup': json.dumps(keyboard)
-                }, timeout=5)
+            # Сообщение 2: подтверждение + ключ + кнопки
+            expiry_date = payment.subscription_expires_at.strftime('%d.%m.%Y %H:%M') if payment.subscription_expires_at else '—'
+            text2 = KEY_DELIVERY_MESSAGE_2.format(issued_key=html.escape(key.key_value), expiry_date=expiry_date)
+            requests.post(url, data={'chat_id': payment.user.user_id, 'text': text2, 'parse_mode': 'HTML', 'reply_markup': json.dumps(keyboard)}, timeout=5)
 
         except Exception as e:
             logger.error(f"Ошибка синхронной отправки уведомления пользователю {payment.user.user_id}: {e}")
