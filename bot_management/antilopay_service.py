@@ -519,7 +519,7 @@ class AntilopayService:
         skip_notification: bool = False
     ) -> bool:
         """
-        Обрабатывает успешный рекуррентный платёж — продлевает подписку.
+        Обрабатывает успешный рекуррентный платёж — продлевает подписку и сбрасывает трафик.
 
         Args:
             original_payment: Исходный платеж (первый платёж по подписке)
@@ -589,6 +589,23 @@ class AntilopayService:
                     logger.error(f"Не удалось продлить ключ для charge #{new_payment.payment_id}")
                     return False
                 new_payment.refresh_from_db()
+                
+                # Сбрасываем трафик в Remnawave при автопродлении
+                try:
+                    from .remnawave_api import reset_user_traffic_by_short_uuid_sync
+                    key_info = last_with_key.issued_key
+                    # Извлекаем shortUuid из ключа (последняя часть после последнего /)
+                    if '/' in key_info:
+                        short_uuid = key_info.split('/')[-1]
+                    else:
+                        short_uuid = key_info
+                    
+                    logger.info(f"Сброс трафика для пользователя по ключу {short_uuid}")
+                    reset_user_traffic_by_short_uuid_sync(short_uuid)
+                    logger.info(f"Трафик успешно сброшен для {short_uuid}")
+                except Exception as traffic_error:
+                    logger.error(f"Ошибка сброса трафика при продлении: {traffic_error}")
+                    # Не прерываем процесс, если сброс трафика не удался
             else:
                 # Первый charge после SUBSCRIPTION binding — генерируем ключ
                 new_payment = PaymentModel.objects.create(

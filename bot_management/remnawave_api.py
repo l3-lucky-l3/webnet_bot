@@ -460,6 +460,34 @@ class RemnawaveAPIError(Exception):
         return f"RemnawaveAPIError: {self.message}"
 
 
+# Синхронный wrapper для использования в antilopay_service.py
+def reset_user_traffic_by_short_uuid_sync(short_uuid: str) -> bool:
+    """
+    Синхронная обертка для сброса трафика пользователя по shortUuid.
+    Используется при автопродлении подписки.
+    """
+    import asyncio
+    from .remnawave_api import get_remnawave_fast_vpn_client
+    
+    client = get_remnawave_fast_vpn_client()
+    if not client:
+        logger.error("Remnawave клиент не инициализирован")
+        return False
+    
+    try:
+        # Запускаем асинхронный метод в синхронном контексте
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(client.reset_user_traffic_by_short_uuid(short_uuid))
+            return result
+        finally:
+            loop.close()
+    except Exception as e:
+        logger.error(f"Ошибка сброса трафика (sync): {e}")
+        return False
+
+
 _remnawave_client: Optional[RemnawaveAPI] = None
 _remnawave_bypass_client: Optional[RemnawaveAPI] = None
 _remnawave_fast_vpn_client: Optional[RemnawaveAPI] = None
