@@ -1,140 +1,111 @@
 # 🐳 Docker для Telegram VPN бота
 
-## Быстрый старт
+## Варианты использования
 
-### 1. Настройка переменных окружения
+### 1. Разработка (Dev) - с прокси/VPN
 
-Скопируйте файл с примером и заполните своими данными:
+Используйте этот вариант, если вы разрабатываете локально и у вас включен VPN или прокси.
+
+#### Быстрый старт (Dev)
 
 ```bash
-cp bot.env.example bot.env
-```
-
-Отредактируйте `bot.env` и укажите:
-- `BOT_TOKEN` - токен вашего Telegram бота
-- `ADMIN_IDS` - ID администраторов (через запятую)
-- `YOOKASSA_SHOP_ID` и `YOOKASSA_SECRET_KEY` - данные ЮKassa
-- `REMNAWAVE_*` - настройки Remnawave API
-- `SECRET_KEY` - секретный ключ Django
-
-### 2. Сборка и запуск
-
-**Важно для пользователей с VPN/Прокси:**  
-Если у вас включен VPN или прокси (например, `http://127.0.0.1:10809`), используйте специальные аргументы для сборки:
-
-**Windows (PowerShell):**
-```powershell
-$env:DOCKER_BUILDKIT=0; docker compose build --no-cache --build-arg HTTP_PROXY=http://host.docker.internal:10809 --build-arg HTTPS_PROXY=http://host.docker.internal:10809 --build-arg http_proxy=http://host.docker.internal:10809 --build-arg https_proxy=http://host.docker.internal:10809
-```
-
-**Linux/Mac:**
-```bash
-export DOCKER_BUILDKIT=0
-docker compose build --no-cache \
-  --build-arg HTTP_PROXY=http://host.docker.internal:10809 \
-  --build-arg HTTPS_PROXY=http://host.docker.internal:10809 \
-  --build-arg http_proxy=http://host.docker.internal:10809 \
-  --build-arg https_proxy=http://host.docker.internal:10809
-```
-
-*> Замените `10809` на порт вашего прокси, если он отличается.*
-
-**Обычный запуск (без VPN):**
-```bash
-docker-compose up -d --build
-```
+# Запуск с прокси (Windows PowerShell)
+$env:DOCKER_BUILDKIT=0; docker compose -f docker-compose.dev.yml --env-file .env.dev up -d --build
 
 # Просмотр логов
-docker-compose logs -f bot
+docker compose -f docker-compose.dev.yml logs -f
 
 # Остановка
-docker-compose down
+docker compose -f docker-compose.dev.yml down
 ```
 
-### 3. Доступ к сервисам
-
-- **Telegram бот**: работает автоматически
-- **Django админка**: http://localhost:8123/admin/
+**Доступ:**
+- Django Admin: http://localhost:8123/admin/
   - Логин: `admin`
-  - Пароль: `admin123` (смените после первого входа!)
+  - Пароль: `admin123`
+- Webhook endpoint: http://localhost:8024/webhook
 
-## Управление
+---
 
-### Просмотр логов
+### 2. Продакшен (Prod) - без прокси, с nginx
+
+Используйте этот вариант для развертывания на сервере (например, 188.215.229.165).
+
+#### Быстрый старт (Prod)
+
 ```bash
-docker-compose logs -f bot
+# 1. Отредактируйте .env.prod и замените все значения на реальные
+# 2. Убедитесь, что порты 80 и 443 свободны
+
+# Запуск
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
+# Просмотр логов
+docker compose -f docker-compose.prod.yml logs -f
+
+# Остановка
+docker compose -f docker-compose.prod.yml down
 ```
 
-### Перезапуск
-```bash
-docker-compose restart bot
+**Доступ:**
+- Django Admin: http://188.215.229.165/admin/
+- Webhook endpoint: http://188.215.229.165/webhook
+
+---
+
+## Тестирование вебхука (Postman)
+
+### Platega
+- **URL:** `http://localhost:8024/webhook` (dev) или `http://188.215.229.165/webhook` (prod)
+- **Method:** POST
+- **Headers:** `Content-Type: application/json`
+- **Body:**
+```json
+{
+  "id": "TEST_PLATEGA_999",
+  "order_id": "ORDER_12345",
+  "status": "CONFIRMED",
+  "amount": 199.00,
+  "currency": "RUB"
+}
 ```
 
-### Обновление
-```bash
-git pull
-docker-compose down
-docker-compose up -d --build
+### Antilopay
+- **URL:** `http://localhost:8024/webhook` (dev) или `http://188.215.229.165/webhook` (prod)
+- **Method:** POST
+- **Headers:** 
+  - `Content-Type: application/json`
+  - `X-Apay-Callback: fake_signature_for_testing`
+- **Body:**
+```json
+{
+  "payment_id": "APAY_TEST_888",
+  "order_id": "ORDER_ANTILO_555",
+  "status": "SUCCESS",
+  "amount": 299.00,
+  "currency": "RUB"
+}
 ```
 
-### Доступ к базе данных
-База данных хранится в Docker volume `telegram-bot-data`.
-
-Для экспорта:
-```bash
-docker run --rm \
-  -v telegram-bot-data:/source \
-  -v $(pwd):/backup \
-  alpine tar czf /backup/db-backup.tar.gz -C /source .
-```
-
-### Резервное копирование
-```bash
-# Создать бэкап базы данных
-docker-compose exec bot python manage.py dumpdata > backup.json
-
-# Или скопировать файл БД
-docker cp telegram-vpn-bot:/app/data/tg_key_bot.db ./backup.db
-```
+---
 
 ## Структура файлов
 
 ```
 .
-├── Dockerfile              # Образ Docker
-├── docker-compose.yml      # Конфигурация Docker Compose
-├── bot.env.example         # Пример переменных окружения
-├── bot.env                 # Ваши переменные (не коммитить!)
-├── .dockerignore           # Исключения для Docker
+├── Dockerfile.dev          # Образ для разработки (с прокси)
+├── Dockerfile.prod         # Образ для продакшена (без прокси)
+├── docker-compose.dev.yml  # Конфигурация для разработки
+├── docker-compose.prod.yml # Конфигурация для продакшена (с nginx)
+├── .env.dev                # Переменные окружения для разработки
+├── .env.prod               # Переменные окружения для продакшена
+├── nginx/
+│   └── nginx.conf          # Конфигурация nginx для продакшена
 └── ...                     # Файлы проекта
 ```
 
 ## Примечания
 
-- База данных SQLite хранится в Docker volume и сохраняется при перезапуске
 - Для production рекомендуется использовать PostgreSQL вместо SQLite
-- Порт 8123 открыт для доступа к Django админке
-- Все логи сохраняются в volume `telegram-bot-logs`
-
-## Troubleshooting
-
-### Бот не запускается
-```bash
-# Проверьте логи
-docker-compose logs bot
-
-# Убедитесь, что bot.env настроен правильно
-cat bot.env
-```
-
-### Ошибка подключения к базе данных
-```bash
-# Проверьте права доступа к volume
-docker volume inspect telegram-bot-data
-```
-
-### Сброс состояния (удалит все данные!)
-```bash
-docker-compose down -v
-docker-compose up -d --build
-```
+- Nginx в production конфигурации автоматически проксирует запросы на Django и webhook сервер
+- Все логи сохраняются в Docker volumes

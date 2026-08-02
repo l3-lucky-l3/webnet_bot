@@ -1,0 +1,38 @@
+# Dockerfile.prod - для продакшена (без прокси, с PostgreSQL)
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Установка системных зависимостей
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копируем требования и устанавливаем их (БЕЗ ПРОКСИ)
+COPY requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Копируем проект
+COPY . .
+
+# Создаем директории для логов
+RUN mkdir -p /app/logs
+
+# Порты для Django и вебхуков
+EXPOSE 8123 8024
+
+# Переменные окружения по умолчанию
+ENV WEBHOOK_HOST=0.0.0.0
+ENV WEBHOOK_PORT=8024
+ENV DJANGO_SETTINGS_MODULE=tg_bot_admin.settings_production
+ENV DEBUG=False
+
+CMD ["python", "run_bot_with_django.py"]

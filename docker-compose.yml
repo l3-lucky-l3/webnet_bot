@@ -2,23 +2,39 @@
 services:
   # 1. Сервис для применения миграций (запускается первым и умирает)
   migrate:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
     command: python manage.py migrate --noinput
     volumes:
       - .:/app
       - ./data:/app/data
     networks:
       - bot_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # 2. Основной сервис бота
   telegram-vpn-bot:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - http_proxy=${http_proxy:-}
+        - https_proxy=${https_proxy:-}
     container_name: telegram-vpn-bot
     restart: unless-stopped
     command: python run_bot_with_django.py
     ports:
-      - "8123:8123"
-      - "8023:8023"
+      - "8123:8123"   # Django admin
+      - "8024:8024"   # Webhook server
     volumes:
       - .:/app
       - ./data:/app/data
@@ -27,6 +43,12 @@ services:
         condition: service_completed_successfully
     networks:
       - bot_network
+    environment:
+      - WEBHOOK_HOST=0.0.0.0
+      - WEBHOOK_PORT=8024
+      - DJANGO_API_URL=http://127.0.0.1:8123
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 networks:
   bot_network:
