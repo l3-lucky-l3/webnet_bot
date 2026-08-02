@@ -4583,7 +4583,7 @@ async def _process_payment_confirmation(callback: CallbackQuery, user_id: int):
 <code>{error_text}</code>
 
 ⏰ Попробуйте позже или обратитесь в поддержку @yamalube61
-""", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+""", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data="pay_confirm")],
             [InlineKeyboardButton(text="⬅️ Каталог", callback_data=back_catalog)]
         ]), edit_message=True)
