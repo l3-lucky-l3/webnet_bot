@@ -406,9 +406,27 @@ class AntilopayService:
             ).first()
 
             if not payment_model:
+                # order_id может быть в формате "{payment_id}_{timestamp}" или "{payment_id}_{timestamp}_R1"
+                # Извлекаем базовый payment_id из order_id
+                base_order_id = order_id
+                if '_R' in order_id:
+                    # Рекуррентный платёж: "69017_20260802221111_R1" -> "69017"
+                    base_order_id = order_id.split('_R')[0]
+                if '_' in base_order_id:
+                    # Уникальный order_id с timestamp: "69017_20260802221111" -> "69017"
+                    parts = base_order_id.split('_')
+                    if len(parts) >= 2 and parts[-1].isdigit():
+                        base_order_id = parts[0]
+                
                 payment_model = PaymentModel.objects.filter(
-                    payment_id=order_id
+                    payment_id=base_order_id
                 ).first()
+                
+                if not payment_model and base_order_id != order_id:
+                    # Пробуем также найти по полному order_id (на случай если payment_id содержит подчёркивания)
+                    payment_model = PaymentModel.objects.filter(
+                        payment_id=order_id
+                    ).first()
 
             # Если это рекуррентный платёж (новый payment_id, но есть recurrent_id)
             if not payment_model and recurrent_id:
