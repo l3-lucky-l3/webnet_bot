@@ -30,7 +30,7 @@ ALLOWED_HOSTS = [
     'localhost',
     'thoughtfully-active-manakin.cloudpub.ru',
     '.cloudpub.ru',  # Разрешаем все поддомены cloudpub.ru
-    '94.156.112.47'
+    '188.215.229.165'
 ]
 
 
