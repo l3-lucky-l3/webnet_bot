@@ -1076,58 +1076,52 @@ class PaymentService:
             logger.error(f"Ошибка отправки уведомления Night VPN пользователю {payment.user.user_id}: {e}")
 
     def _send_fast_vpn_key_notification(self, payment: Payment, key_value: str = None):
-        """Отправляет уведомление с ключом Обычный VPN пользователю"""
+        """Отправляет уведомление с ключом Обычный VPN пользователю — 2 сообщения: инструкция с фото, затем подтверждение с кнопками"""
         try:
             if not key_value:
                 key_value = payment.issued_key
 
             expires_date = payment.subscription_expires_at.strftime('%d.%m.%Y') if payment.subscription_expires_at else '—'
 
-            message = f"""✅ Оплата подтверждена!
+            # Сообщение 1: Инструкция с картинкой (без текста про глушилки)
+            instruction_message = f"""📲<b>Установка и настройка</b>
+
+Мы рекомендуем это приложение👇
+<a href="https://incy.cc/">INCY</a> : https://incy.cc/
+
+🙏<b>УСТАНОВКА</b>
+1.Скачиваем приложение <a href="https://incy.cc/">INCY</a> ( есть в AppStore и PlayMarket)
+2. Нажимаем ( +Добавить )
+3. Вставляем ссылку ключа
+ 
+ГОТОВО✅
+
+⚠️<b>Условия использования</b>
+
+· Доступ на 3 устройства
+· При нарушении правил — бан без возврата средств
+
+🔒<b>Безопасность:</b>
+
+· Не передавайте свой личный ключ третьим лицам
+· При нарушении этого правила доступ может быть <b>заблокирован без возможности возврата средств</b>
+
+⚙️<b>Решение небольших проблем</b>:
+
+· Обновить конфигурацию ( кнопка правее названия "WebNet" )
+· Запустить проверку пинга ( кнопка молнии, рядом с обновлением )
+· Перезапустить приложение
+· Включить/выключить VPN"""
+
+            # Сообщение 2: Подтверждение оплаты с кнопками
+            confirmation_message = f"""✅ Оплата подтверждена!
 
 🚀 Обычный VPN - Ключ активирован
 
 🔑 Ваш ключ доступа:
 {key_value}
 
-📅 Действует до: {expires_date}
-
-📲Установка и настройка
-
-Мы рекомендуем это приложение👇
-INCY (https://incy.cc/) : https://incy.cc/
-
-🙏УСТАНОВКА
-1.Скачиваем приложение INCY (https://incy.cc/) ( есть в AppStore и PlayMarket)
-2. Нажимаем ( +Добавить )
-3. Вставляем ссылку ключа
- 
-ГОТОВО✅
-
-⚠️Условия использования
-
-· Доступ на 3 устройства
-· При нарушении правил — бан без возврата средств
-
-🌐Выбор сервера от ГЛУШИЛОК:
-
-· При глушении связи — выбирайте сервер с припиской ОБХОД БЕЛЫХ СПИСКОВ
-
-❗️ОБЯЗАТЕЛЬНО ВЫКЛЮЧАЙТЕ WI-FI если хотите чтобы обход заработал ✅
-
-· Если интернет не глушат — используйте обычный VPN
-
-🔒Безопасность:
-
-· Не передавайте свой личный ключ третьим лицам
-· При нарушении этого правила доступ может быть заблокирован без возможности возврата средств
-
-⚙️Решение небольших проблем:
-
-· Обновить конфигурацию ( кнопка правее названия "WebNet" )
-· Запустить проверку пинга ( кнопка молнии, рядом с обновлением )
-· Перезапустить приложение
-· Включить/выключить VPN"""
+📅 Действует до: {expires_date}"""
 
             import json
             keyboard = {
@@ -1140,10 +1134,38 @@ INCY (https://incy.cc/) : https://incy.cc/
 
             from config import BOT_TOKEN
             import requests as req
+            from pathlib import Path
+
+            # Отправляем первое сообщение с картинкой
+            image_path = "images/instruction.jpg"
+            if Path(image_path).exists():
+                with open(image_path, 'rb') as photo:
+                    files = {'photo': photo}
+                    data = {
+                        'chat_id': payment.user.user_id,
+                        'caption': instruction_message,
+                        'parse_mode': 'HTML',
+                        'disable_web_page_preview': 'true'
+                    }
+                    req.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto", files=files, data=data, timeout=10)
+            else:
+                # Если картинки нет, отправляем текстом
+                req.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={
+                    'chat_id': payment.user.user_id,
+                    'text': instruction_message,
+                    'parse_mode': 'HTML',
+                    'disable_web_page_preview': 'true'
+                }, timeout=5)
+
+            import time
+            time.sleep(1)
+
+            # Отправляем второе сообщение с подтверждением и кнопками
             req.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={
                 'chat_id': payment.user.user_id,
-                'text': message,
-                'reply_markup': json.dumps(keyboard)
+                'text': confirmation_message,
+                'reply_markup': json.dumps(keyboard),
+                'disable_web_page_preview': 'true'
             }, timeout=5)
             
             logger.info(f"Уведомление Обычный VPN отправлено пользователю {payment.user.user_id}")
