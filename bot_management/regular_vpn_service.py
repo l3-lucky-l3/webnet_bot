@@ -70,13 +70,16 @@ def _send_payment_success_notification_sync(payment: Payment, key: str):
 
         keyboard = {
             "inline_keyboard": [
-                [{"text": "📲 Настройка (INCY)", "url": "https://incy.cc/"}],
-                [{"text": "🔑 Мои ключи", "callback_data": "my_keys"}],
-                [{"text": "📞 Поддержка", "callback_data": "support"}]
+                [{"text": "🚀 Открыть ключ", "url": key}],
+                [
+                    {"text": "⬅️ Главное меню", "callback_data": "main_menu"},
+                    {"text": "💬 Написать менеджеру", "url": "https://t.me/yamalube61"}
+                ]
             ]
         }
 
         from pathlib import Path
+        import time
         
         # Отправляем первое сообщение с картинкой
         image_path = "images/instruction.jpg"
@@ -111,8 +114,8 @@ def _send_payment_success_notification_sync(payment: Payment, key: str):
                 timeout=5
             )
 
-        import time
-        time.sleep(1)
+        # Задержка перед отправкой второго сообщения
+        time.sleep(1.5)
 
         # Отправляем второе сообщение с подтверждением и кнопками
         url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
