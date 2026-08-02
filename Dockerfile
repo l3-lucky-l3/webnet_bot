@@ -2,12 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Настройки прокси для сборки (apt и pip)
-# Переменные в нижнем регистре тоже важны - apt их использует
-ARG HTTP_PROXY=http://127.0.0.1:10809
-ARG HTTPS_PROXY=http://127.0.0.1:10809
-ARG http_proxy=http://127.0.0.1:10809
-ARG https_proxy=http://127.0.0.1:10809
+# Аргументы для прокси (используются только в dev сборке)
+ARG HTTP_PROXY=""
+ARG HTTPS_PROXY=""
+ARG http_proxy=""
+ARG https_proxy=""
 
 ENV HTTP_PROXY=${HTTP_PROXY}
 ENV HTTPS_PROXY=${HTTPS_PROXY}
@@ -16,7 +15,7 @@ ENV https_proxy=${https_proxy}
 ENV NO_PROXY="localhost,127.0.0.1,deb.debian.org,security.debian.org"
 ENV no_proxy="localhost,127.0.0.1,deb.debian.org,security.debian.org"
 
-# Устанавливаем только необходимые пакеты (без gcc и libpq-dev, так как используем SQLite)
+# Установка системных зависимостей
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
@@ -24,7 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Копирование файлов зависимостей
 COPY requirements.txt .
 
-# Установка Python-зависимостей через прокси
+# Установка Python-зависимостей
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Копирование всего проекта
@@ -33,15 +33,17 @@ COPY . .
 # Создание директорий для данных
 RUN mkdir -p /app/data /app/logs
 
-# Переменная окружения для базы данных
+# Переменные окружения для базы данных
 ENV DB_PATH=/app/data/tg_key_bot.db
 ENV PYTHONUNBUFFERED=1
 
-# Порт для Django админки
-EXPOSE 8123
+# Порты для Django админки и вебхуков
+EXPOSE 8123 8024
 
 # Переменные окружения для доступа внутри контейнера
 ENV DJANGO_API_URL=http://127.0.0.1:8123
+ENV WEBHOOK_HOST=0.0.0.0
+ENV WEBHOOK_PORT=8024
 
 # Команда запуска
 CMD ["python", "run_bot_with_django.py"]
