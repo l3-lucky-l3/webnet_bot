@@ -262,7 +262,17 @@ class AntilopayService:
                 result = response.json()
                 code = result.get('code')
                 if code != 0:
-                    logger.error(f"Antilopay check error: {result.get('error', f'code: {code}')}")
+                    error_msg = result.get('error', f'code: {code}')
+                    logger.info(f"Antilopay check error: {error_msg}")
+                    # Если платеж еще не найден в Antilopay (создан недавно), считаем его PENDING
+                    if code in (3, 5) or 'not found' in error_msg.lower() or 'Duplicated' in error_msg:
+                        logger.info(f"Платеж {order_id} еще не найден в Antilopay, возвращаем PENDING")
+                        return {
+                            'status': 'PENDING',
+                            'order_id': order_id,
+                            'amount': 0,
+                            'currency': 'RUB',
+                        }
                     return None
                 return result
             else:
