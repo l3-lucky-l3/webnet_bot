@@ -1275,6 +1275,7 @@ class BotWebhookView(View):
         import json
         from config import PLATEGA_MERCHANT_ID, PLATEGA_SECRET
         from .platega_service import PlategaService
+        from .antilopay_service import AntilopayService
         
         logger.info("DEBUG: Получен POST запрос на универсальный webhook")
         
@@ -1300,38 +1301,61 @@ class BotWebhookView(View):
         
         logger.info(f"DEBUG: Получен webhook: {callback_data}")
         
-        # Валидация обязательных полей (поддерживаем как 'id', так и 'order_id')
-        transaction_id = callback_data.get('id') or callback_data.get('order_id')
-        status = callback_data.get('status')
-        amount = callback_data.get('amount')
-        currency = callback_data.get('currency')
+        # Определяем тип платёжной системы по структуре данных
+        # Antilopay: есть поля 'payment_id', 'order_id', 'type'='payment'
+        # Platega: есть поле 'id' или 'order_id', но нет 'payment_id' и 'type'
         
-        required_fields = ['status']
-        if not transaction_id:
-            required_fields.append('id или order_id')
+        is_antilopay = (
+            'payment_id' in callback_data or 
+            callback_data.get('type') == 'payment' or
+            'recurrent_id' in callback_data
+        )
         
-        missing_fields = [field for field in required_fields if field not in callback_data and not (field == 'id или order_id' and transaction_id)]
-        if missing_fields:
-            logger.error(f"DEBUG: Отсутствуют обязательные поля: {missing_fields}")
-            return JsonResponse({'status': 'error', 'message': f'Missing required fields: {missing_fields}'}, status=400)
-        
-        # Нормализуем данные для PlategaService
-        normalized_data = {
-            'id': transaction_id,
-            'status': status,
-            'amount': amount,
-            'currency': currency,
-            'paymentMethod': callback_data.get('paymentMethod'),
-            'payload': callback_data.get('payload', ''),
-            'order_id': callback_data.get('order_id'),
-            'description': callback_data.get('description'),
-            'created_at': callback_data.get('created_at'),
-        }
-        
-        logger.info(f"DEBUG: Transaction ID: {transaction_id}, Status: {status}")
-        
-        # Обрабатываем callback через сервис
-        result = PlategaService.process_webhook(normalized_data, merchant_id=merchant_id, secret=secret)
+        if is_antilopay:
+            logger.info("DEBUG: Определили как Antilopay callback, передаём в AntilopayService")
+            # Проверяем подпись callback для Antilopay
+            signature = request.META.get('HTTP_X_APAY_CALLBACK', '')
+            if signature:
+                raw_body = request.body.decode('utf-8')
+                if not AntilopayService.verify_callback_signature(raw_body, signature):
+                    logger.error("Неверная подпись callback Antilopay")
+                    return JsonResponse({'status': 'error', 'message': 'Invalid signature'}, status=403)
+            
+            result = AntilopayService.process_webhook(callback_data, skip_notification=False)
+        else:
+            logger.info("DEBUG: Определили как Platega callback, передаём в PlategaService")
+            # Валидация обязательных полей (поддерживаем как 'id', так и 'order_id')
+            transaction_id = callback_data.get('id') or callback_data.get('order_id')
+            status = callback_data.get('status')
+            amount = callback_data.get('amount')
+            currency = callback_data.get('currency')
+            
+            required_fields = ['status']
+            if not transaction_id:
+                required_fields.append('id или order_id')
+            
+            missing_fields = [field for field in required_fields if field not in callback_data and not (field == 'id или order_id' and transaction_id)]
+            if missing_fields:
+                logger.error(f"DEBUG: Отсутствуют обязательные поля: {missing_fields}")
+                return JsonResponse({'status': 'error', 'message': f'Missing required fields: {missing_fields}'}, status=400)
+            
+            # Нормализуем данные для PlategaService
+            normalized_data = {
+                'id': transaction_id,
+                'status': status,
+                'amount': amount,
+                'currency': currency,
+                'paymentMethod': callback_data.get('paymentMethod'),
+                'payload': callback_data.get('payload', ''),
+                'order_id': callback_data.get('order_id'),
+                'description': callback_data.get('description'),
+                'created_at': callback_data.get('created_at'),
+            }
+            
+            logger.info(f"DEBUG: Transaction ID: {transaction_id}, Status: {status}")
+            
+            # Обрабатываем callback через сервис
+            result = PlategaService.process_webhook(normalized_data, merchant_id=merchant_id, secret=secret)
         
         if result:
             logger.info("DEBUG: Callback успешно обработан")

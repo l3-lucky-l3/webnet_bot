@@ -400,6 +400,8 @@ class AntilopayService:
                 logger.error(f"Недостаточно данных в callback: payment_id={payment_id_ap}, status={status}")
                 return False
 
+            logger.info(f"Обработка callback: payment_id_ap={payment_id_ap}, order_id={order_id}, status={status}, recurrent_id={recurrent_id}")
+
             # Ищем платеж по antilopay_payment_id или order_id
             payment_model = PaymentModel.objects.filter(
                 antilopay_payment_id=payment_id_ap
@@ -409,30 +411,37 @@ class AntilopayService:
                 # order_id может быть в формате "{payment_id}_{timestamp}" или "{payment_id}_{timestamp}_R1"
                 # Извлекаем базовый payment_id из order_id
                 base_order_id = order_id
+                logger.debug(f"Платеж не найден по antilopay_payment_id={payment_id_ap}, пробуем извлечь из order_id={order_id}")
+                
                 if '_R' in order_id:
-                    # Рекуррентный платёж: "69017_20260802221111_R1" -> "69017"
+                    # Рекуррентный платёж: "69017_20260802221111_R1" -> "69017_20260802221111"
                     base_order_id = order_id.split('_R')[0]
+                    logger.debug(f"Удалён суффикс рекуррента, base_order_id={base_order_id}")
+                    
                 if '_' in base_order_id:
                     # Уникальный order_id с timestamp: "69017_20260802221111" -> "69017"
                     parts = base_order_id.split('_')
-                    if len(parts) >= 2 and parts[-1].isdigit():
+                    if len(parts) >= 2:
+                        # Первый элемент - это payment_id
                         base_order_id = parts[0]
+                        logger.debug(f"Извлечён payment_id из order_id: {base_order_id} (parts={parts})")
                 
                 # Преобразуем в integer для поиска по AutoField
                 try:
                     base_payment_id = int(base_order_id)
+                    logger.debug(f"Поиск платежа по payment_id={base_payment_id} (из order_id={order_id})")
                     payment_model = PaymentModel.objects.filter(
                         payment_id=base_payment_id
                     ).first()
-                except (ValueError, TypeError):
-                    logger.warning(f"Не удалось преобразовать order_id={order_id} в integer")
+                    if payment_model:
+                        logger.info(f"Найден платеж #{base_payment_id} по order_id={order_id}")
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Не удалось преобразовать order_id={order_id} в integer: {e}")
                     payment_model = None
                 
                 if not payment_model and base_order_id != order_id:
                     # Пробуем также найти по полному order_id (на случай если payment_id содержит подчёркивания)
-                    payment_model = PaymentModel.objects.filter(
-                        payment_id=order_id
-                    ).first()
+                    logger.debug(f"Поиск по полному order_id={order_id} не требуется, payment_id - целое число")
 
             # Если это рекуррентный платёж (новый payment_id, но есть recurrent_id)
             if not payment_model and recurrent_id:
