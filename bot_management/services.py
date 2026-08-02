@@ -1124,17 +1124,21 @@ class PaymentService:
 📅 Действует до: {expires_date}"""
 
             import json
-            keyboard = {
-                "inline_keyboard": [
-                    [{"text": "📲 Настройка (INCY)", "url": "https://incy.cc/"}],
-                    [{"text": "🔑 Мои ключи", "callback_data": "my_keys"}],
-                    [{"text": "📞 Поддержка", "callback_data": "support"}]
-                ]
-            }
-
             from config import BOT_TOKEN
             import requests as req
             from pathlib import Path
+            import time
+
+            # Формируем клавиатуру для второго сообщения
+            keyboard = {
+                "inline_keyboard": [
+                    [{"text": "🚀 Открыть ключ", "url": key_value}],
+                    [
+                        {"text": "⬅️ Главное меню", "callback_data": "main_menu"},
+                        {"text": "💬 Написать менеджеру", "url": "https://t.me/yamalube61"}
+                    ]
+                ]
+            }
 
             # Отправляем первое сообщение с картинкой
             image_path = "images/instruction.jpg"
@@ -1157,8 +1161,8 @@ class PaymentService:
                     'disable_web_page_preview': 'true'
                 }, timeout=5)
 
-            import time
-            time.sleep(1)
+            # Задержка перед отправкой второго сообщения
+            time.sleep(1.5)
 
             # Отправляем второе сообщение с подтверждением и кнопками
             req.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", data={
