@@ -1299,20 +1299,38 @@ class BotWebhookView(View):
         
         logger.info(f"DEBUG: Получен webhook: {callback_data}")
         
-        # Валидация обязательных полей
-        required_fields = ['id', 'amount', 'currency', 'status']
-        missing_fields = [field for field in required_fields if field not in callback_data]
+        # Валидация обязательных полей (поддерживаем как 'id', так и 'order_id')
+        transaction_id = callback_data.get('id') or callback_data.get('order_id')
+        status = callback_data.get('status')
+        amount = callback_data.get('amount')
+        currency = callback_data.get('currency')
+        
+        required_fields = ['status']
+        if not transaction_id:
+            required_fields.append('id или order_id')
+        
+        missing_fields = [field for field in required_fields if field not in callback_data and not (field == 'id или order_id' and transaction_id)]
         if missing_fields:
             logger.error(f"DEBUG: Отсутствуют обязательные поля: {missing_fields}")
             return JsonResponse({'status': 'error', 'message': f'Missing required fields: {missing_fields}'}, status=400)
         
-        # Обрабатываем callback через сервис
-        transaction_id = callback_data.get('id')
-        status = callback_data.get('status', '').upper()
+        # Нормализуем данные для PlategaService
+        normalized_data = {
+            'id': transaction_id,
+            'status': status,
+            'amount': amount,
+            'currency': currency,
+            'paymentMethod': callback_data.get('paymentMethod'),
+            'payload': callback_data.get('payload', ''),
+            'order_id': callback_data.get('order_id'),
+            'description': callback_data.get('description'),
+            'created_at': callback_data.get('created_at'),
+        }
         
         logger.info(f"DEBUG: Transaction ID: {transaction_id}, Status: {status}")
         
-        result = PlategaService.process_webhook(callback_data, merchant_id=merchant_id, secret=secret)
+        # Обрабатываем callback через сервис
+        result = PlategaService.process_webhook(normalized_data, merchant_id=merchant_id, secret=secret)
         
         if result:
             logger.info("DEBUG: Callback успешно обработан")
