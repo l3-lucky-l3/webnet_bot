@@ -3,6 +3,7 @@ import logging
 import base64
 import requests
 from typing import Optional, Dict, Any
+from django.utils import timezone
 from .models import Payment as PaymentModel
 from config import ANTILOPAY_SECRET_ID, ANTILOPAY_PRIVATE_KEY, ANTILOPAY_PROJECT_ID
 
@@ -117,10 +118,33 @@ class AntilopayService:
             }
             description = f"Оплата подписки: {subscription_names.get(payment_model.subscription_type, payment_model.subscription_type)}"
 
+            # Проверяем, есть ли уже созданный платеж в Antilopay для этого payment_id
+            if payment_model.antilopay_payment_id and payment_model.antilopay_payment_url:
+                logger.info(f"Платеж Antilopay уже создан: payment_id={payment_model.payment_id}, antilopay_id={payment_model.antilopay_payment_id}")
+                # Проверяем статус существующего платежа
+                check_result = AntilopayService.check_payment(ANTILOPAY_PROJECT_ID, str(payment_model.payment_id))
+                if check_result:
+                    status = check_result.get('status')
+                    logger.info(f"Статус существующего платежа: {status}")
+                    if status in ('PENDING', 'WAIT_CONFIRM', 'PROCESSING'):
+                        logger.info(f"Возвращаем существующий URL для платежа {payment_model.payment_id}")
+                        return {
+                            'payment_id': payment_model.antilopay_payment_id,
+                            'payment_url': payment_model.antilopay_payment_url,
+                            'status': status,
+                            'amount': payment_model.amount,
+                            'currency': 'RUB',
+                            'description': description,
+                        }
+                logger.info(f"Существующий платеж в терминальном статусе, пробуем создать новый с уникальным order_id")
+
+            # Для избежания дублирования order_id используем уникальный идентификатор
+            unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            
             body_dict = {
                 'project_identificator': ANTILOPAY_PROJECT_ID,
                 'amount': float(payment_model.amount),
-                'order_id': str(payment_model.payment_id),
+                'order_id': unique_order_id,
                 'currency': 'RUB',
                 'product_name': description[:100],
                 'product_type': 'services',
@@ -143,7 +167,7 @@ class AntilopayService:
             body = json.dumps(body_dict, separators=(',', ':'))
             headers = AntilopayService._headers(body)
 
-            logger.info(f"Создание платежа Antilopay: payment_id={payment_model.payment_id}, amount={payment_model.amount}")
+            logger.info(f"Создание платежа Antilopay: payment_id={payment_model.payment_id}, amount={payment_model.amount}, order_id={unique_order_id}")
 
             response = requests.post(
                 f'{ANTILOPAY_BASE_URL}/payment/create',

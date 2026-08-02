@@ -4,36 +4,52 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.Python
-env/
+*.py~
+*.py.class
+*.py.backup
+*.swp
+*.swo
+
+# Virtual environments
 venv/
 .venv/
-.ENV
-.ENV.local
+env/
+.env/
 
 # Dependencies
-requirements.txt.bak
+pip-wheel-metadata/
+requirements/*.txt
+*.egg-info/
 
 # Logs
 *.log
 
-# Coverage
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
 .coverage
-coverage/
 htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
+*.sublime-project
+*.sublime-workspace
 
-# OS
-.DS_Store
-Thumbs.db
-
-# Build
-dist/
-build/
-*.egg-info/
+# Environment variables
+.env
+.env.local
+*.env
+.env.*
 ```
