@@ -5,7 +5,14 @@ from .settings import *
 DEBUG = False
 
 # Безопасность
-ALLOWED_HOSTS = ['your-domain.com', 'your-server-ip', 'localhost', '94.156.112.47']
+ALLOWED_HOSTS = [
+    'your-domain.com',
+    'your-server-ip',
+    'localhost',
+    '94.156.112.47',
+    'webnet.panel-fran-patriot.com.de',
+    '.panel-fran-patriot.com.de',  # Разрешаем все поддомены
+]
 
 # База данных PostgreSQL для продакшена (рекомендуется)
 DATABASES = {
