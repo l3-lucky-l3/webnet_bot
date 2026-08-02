@@ -734,27 +734,27 @@ async def handle_platega_callback(request):
     Согласно документации: https://docs.platega.io/callback-об-изменении-статуса-транзакции-22645075e0
     
     Используется когда нет домена - через ngrok или другой туннель
+    Также используется как универсальный webhook endpoint для всех платежных систем
     """
     try:
         import json
         from config import PLATEGA_MERCHANT_ID, PLATEGA_SECRET
         
-        logging.info("DEBUG: Получен POST запрос на Platega callback в боте")
+        logging.info("DEBUG: Получен POST запрос на webhook")
         
-        # Проверка авторизации через заголовки
+        # Проверка авторизации через заголовки (для Platega)
         merchant_id = request.headers.get('X-MerchantId')
         secret = request.headers.get('X-Secret')
         
-        if not merchant_id or not secret:
-            logging.error("DEBUG: Отсутствуют обязательные заголовки X-MerchantId или X-Secret")
-            return web.json_response({'status': 'error', 'message': 'Unauthorized'}, status=401)
-        
-        # Проверяем учетные данные
-        if merchant_id != PLATEGA_MERCHANT_ID or secret != PLATEGA_SECRET:
-            logging.error(f"DEBUG: Неверные учетные данные")
-            return web.json_response({'status': 'error', 'message': 'Unauthorized'}, status=401)
-        
-        logging.info("DEBUG: Авторизация успешна")
+        # Если заголовки отсутствуют, это может быть универсальный webhook без авторизации
+        if merchant_id and secret:
+            # Проверяем учетные данные Platega
+            if merchant_id != PLATEGA_MERCHANT_ID or secret != PLATEGA_SECRET:
+                logging.error(f"DEBUG: Неверные учетные данные")
+                return web.json_response({'status': 'error', 'message': 'Unauthorized'}, status=401)
+            logging.info("DEBUG: Авторизация Platega успешна")
+        else:
+            logging.info("DEBUG: Запрос без авторизации Platega (универсальный webhook)")
         
         # Получаем данные callback из JSON тела
         try:
@@ -763,10 +763,10 @@ async def handle_platega_callback(request):
             logging.error(f"DEBUG: Ошибка парсинга JSON: {e}")
             return web.json_response({'status': 'error', 'message': 'Invalid JSON'}, status=400)
         
-        logging.info(f"DEBUG: Получен callback от Platega: {callback_data}")
+        logging.info(f"DEBUG: Получен webhook: {callback_data}")
         
-        # Валидация обязательных полей
-        required_fields = ['id', 'amount', 'currency', 'status', 'paymentMethod']
+        # Валидация обязательных полей (Platega формат)
+        required_fields = ['id', 'amount', 'currency', 'status']
         missing_fields = [field for field in required_fields if field not in callback_data]
         if missing_fields:
             logging.error(f"DEBUG: Отсутствуют обязательные поля: {missing_fields}")
@@ -896,6 +896,8 @@ async def init_http_server():
     app.router.add_post('/api/withdrawal/notification/', handle_withdrawal_notification)
     # Endpoint для Platega callback напрямую в бот
     app.router.add_post('/api/platega/callback/', handle_platega_callback)
+    # Универсальный webhook endpoint для всех платежных систем
+    app.router.add_post('/webhook', handle_platega_callback)
     
     runner = web.AppRunner(app)
     await runner.setup()
@@ -905,6 +907,7 @@ async def init_http_server():
     logging.info("HTTP сервер бота запущен на порту 8023 (0.0.0.0)")
     logging.info("Для публичного доступа используйте ngrok: ngrok http 8023")
     logging.info("URL для Platega callback: https://ваш-ngrok-url.ngrok.io/api/platega/callback/")
+    logging.info("URL для универсального webhook: http://188.215.229.165/webhook")
 
 # Проверяем настройки
 print(f"SUPPORT_GROUP_ID: {SUPPORT_GROUP_ID}")

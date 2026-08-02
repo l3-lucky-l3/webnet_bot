@@ -1269,8 +1269,60 @@ def set_user_entry_method(request):
 
 # Дополнительные функции для совместимости с URL
 class BotWebhookView(View):
-    """Webhook для бота"""
+    """Универсальный Webhook для всех платежных систем (Platega, Antilopay и др.)"""
     def post(self, request):
+        import json
+        from config import PLATEGA_MERCHANT_ID, PLATEGA_SECRET
+        from .platega_service import PlategaService
+        
+        logger.info("DEBUG: Получен POST запрос на универсальный webhook")
+        
+        # Проверка авторизации через заголовки (для Platega)
+        merchant_id = request.headers.get('X-MerchantId')
+        secret = request.headers.get('X-Secret')
+        
+        # Если заголовки присутствуют, проверяем их
+        if merchant_id and secret:
+            if merchant_id != PLATEGA_MERCHANT_ID or secret != PLATEGA_SECRET:
+                logger.error(f"DEBUG: Неверные учетные данные")
+                return JsonResponse({'status': 'error', 'message': 'Unauthorized'}, status=401)
+            logger.info("DEBUG: Авторизация Platega успешна")
+        else:
+            logger.info("DEBUG: Запрос без авторизации Platega (универсальный webhook)")
+        
+        # Получаем данные callback из JSON тела
+        try:
+            callback_data = json.loads(request.body)
+        except json.JSONDecodeError as e:
+            logger.error(f"DEBUG: Ошибка парсинга JSON: {e}")
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON'}, status=400)
+        
+        logger.info(f"DEBUG: Получен webhook: {callback_data}")
+        
+        # Валидация обязательных полей
+        required_fields = ['id', 'amount', 'currency', 'status']
+        missing_fields = [field for field in required_fields if field not in callback_data]
+        if missing_fields:
+            logger.error(f"DEBUG: Отсутствуют обязательные поля: {missing_fields}")
+            return JsonResponse({'status': 'error', 'message': f'Missing required fields: {missing_fields}'}, status=400)
+        
+        # Обрабатываем callback через сервис
+        transaction_id = callback_data.get('id')
+        status = callback_data.get('status', '').upper()
+        
+        logger.info(f"DEBUG: Transaction ID: {transaction_id}, Status: {status}")
+        
+        result = PlategaService.process_webhook(callback_data, merchant_id=merchant_id, secret=secret)
+        
+        if result:
+            logger.info("DEBUG: Callback успешно обработан")
+            return JsonResponse({'status': 'ok'}, status=200)
+        else:
+            logger.warning("DEBUG: Callback обработан с ошибкой")
+            return JsonResponse({'status': 'ok', 'message': 'Received but processing failed'}, status=200)
+    
+    def get(self, request):
+        """Health check для webhook"""
         return JsonResponse({'status': 'ok'})
 
 
