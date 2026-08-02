@@ -1,5 +1,4 @@
 services:
-  # 1. Сервис для миграций (запускается первым и завершается)
   migrate:
     build:
       context: .
@@ -9,14 +8,13 @@ services:
     volumes:
       - .:/app
       - ./data:/app/data
-      - ./tg_key_bot.db:/app/tg_key_bot.db  # Монтируем SQLite БД
+      - ./tg_key_bot.db:/app/tg_key_bot.db
     networks:
       - webnet_network_prod
     environment:
       - DJANGO_SETTINGS_MODULE=tg_bot_admin.settings
       - DEBUG=False
 
-  # 2. Основной сервис бота
   telegram-vpn-bot:
     build:
       context: .
@@ -42,23 +40,22 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=False
     ports:
-      - "8123:8123"   # Django admin
-      - "8023:8023"   # Webhook server (тот же порт)
+      - "8123:8123"
+      - "8023:8023"
     expose:
       - "8023"
       - "8123"
     volumes:
       - .:/app
       - ./data:/app/data
-      - ./tg_key_bot.db:/app/tg_key_bot.db  # Монтируем SQLite БД
-      - ./images:/app/images  # Монтируем папку с изображениями (опционально)
-      - ./bot_security.log:/app/bot_security.log  # Логи (опционально)
+      - ./tg_key_bot.db:/app/tg_key_bot.db
+      - ./images:/app/images
+      - ./bot_security.log:/app/bot_security.log
     networks:
       - webnet_network_prod
     command: >
       sh -c "python run_bot_with_django.py"
 
-  # 3. Nginx
   nginx:
     image: nginx:alpine
     container_name: webnet_nginx_prod
@@ -68,10 +65,9 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./static:/app/static  # Если есть статика
-      - ./media:/app/media    # Если есть медиа
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
+      - ./static:/app/static
+      - ./media:/app/media
+      - /etc/letsencrypt:/etc/letsencrypt:ro   # ← ВСЯ папка
     depends_on:
       - telegram-vpn-bot
     networks:
