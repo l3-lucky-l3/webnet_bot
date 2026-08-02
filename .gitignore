@@ -1,36 +1,5 @@
-```
-# Logs and temp files
-*.log
-*.tmp
-*.swp
+(bot_management/antilopay_service.py is a source file, so no changes needed to .gitignore)
 
-# Environment
-.env
-.env.local
-.env.
+```python
 
-# Editors
-.vscode/
-.idea/
-
-# Dependencies
-node_modules/
-.venv/
-venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
-
-# Build artifacts
-dist/
-build/
-target/
-*.pyc
-*.o
-*.obj
-*.out
-
-# System files
-.DS_Store
-Thumbs.db
 ```
