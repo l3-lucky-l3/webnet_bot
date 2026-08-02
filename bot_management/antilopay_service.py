@@ -418,9 +418,15 @@ class AntilopayService:
                     if len(parts) >= 2 and parts[-1].isdigit():
                         base_order_id = parts[0]
                 
-                payment_model = PaymentModel.objects.filter(
-                    payment_id=base_order_id
-                ).first()
+                # Преобразуем в integer для поиска по AutoField
+                try:
+                    base_payment_id = int(base_order_id)
+                    payment_model = PaymentModel.objects.filter(
+                        payment_id=base_payment_id
+                    ).first()
+                except (ValueError, TypeError):
+                    logger.warning(f"Не удалось преобразовать order_id={order_id} в integer")
+                    payment_model = None
                 
                 if not payment_model and base_order_id != order_id:
                     # Пробуем также найти по полному order_id (на случай если payment_id содержит подчёркивания)
