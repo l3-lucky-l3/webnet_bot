@@ -37,15 +37,15 @@ services:
       - REMNAWAVE_API_URL=${REMNAWAVE_API_URL}
       - REMNAWAVE_API_KEY=${REMNAWAVE_API_KEY}
       - WEBHOOK_HOST=0.0.0.0
-      - WEBHOOK_PORT=8024
+      - WEBHOOK_PORT=8023
       - DJANGO_SETTINGS_MODULE=tg_bot_admin.settings
       - SECRET_KEY=${SECRET_KEY}
       - DEBUG=False
     ports:
       - "8123:8123"   # Django admin
-      - "8024:8024"   # Webhook server
+      - "8023:8023"   # Webhook server (тот же порт)
     expose:
-      - "8024"
+      - "8023"
       - "8123"
     volumes:
       - .:/app
