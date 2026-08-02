@@ -810,7 +810,7 @@ async def handle_platega_callback(request):
             with get_db() as conn:
                 # Находим платеж по transaction_id
                 cursor = conn.execute("""
-                    SELECT payment_id, user_id, status, subscription_type, amount
+                    SELECT payment_id, user_id, status, subscription_type, amount, issued_key
                     FROM payments
                     WHERE platega_transaction_id = ?
                 """, (transaction_id,))
@@ -821,9 +821,14 @@ async def handle_platega_callback(request):
                     logging.warning(f"DEBUG: Платеж с transaction_id {transaction_id} не найден в БД")
                     return web.json_response({'status': 'ok', 'message': 'Payment not found'}, status=200)
                 
-                payment_id, user_id, payment_status, subscription_type, amount = payment
+                payment_id, user_id, payment_status, subscription_type, amount, issued_key = payment
                 
-                logging.info(f"DEBUG: Найден платеж: payment_id={payment_id}, user_id={user_id}, status={payment_status}")
+                logging.info(f"DEBUG: Найден платеж: payment_id={payment_id}, user_id={user_id}, status={payment_status}, issued_key={issued_key}")
+                
+                # ===== ПРОВЕРКА: КЛЮЧ УЖЕ ВЫДАН =====
+                if issued_key:
+                    logging.info(f"DEBUG: Ключ для платежа {payment_id} уже выдан, пропускаем обработку")
+                    return web.json_response({'status': 'ok', 'message': 'Key already issued'}, status=200)
                 
                 # Обработка статусов
                 if status == 'CONFIRMED':
