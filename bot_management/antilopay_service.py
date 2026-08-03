@@ -475,6 +475,55 @@ class AntilopayService:
                     except Exception as e:
                         logger.error(f"Ошибка проверки рекуррента при charge callback: {e}")
                         return False
+                
+                # Если не нашли по recurrent_id, пробуем найти по order_id (извлекаем payment_id)
+                if not original_payment and order_id:
+                    # Извлекаем payment_id из order_id для поиска последних платежей пользователя
+                    base_order_id = order_id
+                    if '_R' in order_id:
+                        base_order_id = order_id.split('_R')[0]
+                    if '_' in base_order_id:
+                        parts = base_order_id.split('_')
+                        if len(parts) >= 2:
+                            try:
+                                base_payment_id = int(parts[0])
+                                # Находим исходный платеж и ищем его recurrent_id
+                                base_payment = PaymentModel.objects.filter(payment_id=base_payment_id).first()
+                                if base_payment and base_payment.antilopay_recurrent_id:
+                                    logger.info(f"Найден базовый платеж #{base_payment_id} с recurrent_id={base_payment.antilopay_recurrent_id}")
+                                    recurrent_id = base_payment.antilopay_recurrent_id
+                                    original_payment = base_payment
+                            except (ValueError, TypeError) as e:
+                                logger.warning(f"Не удалось преобразовать base_payment_id из order_id={order_id}: {e}")
+
+            # Если нашли исходный платеж для рекуррентного списания, обрабатываем его
+            if not payment_model and original_payment and recurrent_id and status == 'SUCCESS':
+                # Это рекуррентный платёж, для которого нужно создать новый платеж в БД
+                logger.info(f"Рекуррентный платёж без записи в БД, создаём новую запись на основе платежа #{original_payment.payment_id}")
+                return AntilopayService._handle_recurrent_payment_success(
+                    original_payment, payment_id_ap, callback_data, skip_notification
+                )
+            
+            # Если не нашли ни по одному критерию — пробуем найти по order_id (извлекаем payment_id)
+            # Это может быть повторный webhook или первый платёж без привязки recurrent_id
+            if not payment_model and order_id:
+                base_order_id = order_id
+                if '_R' in order_id:
+                    base_order_id = order_id.split('_R')[0]
+                if '_' in base_order_id:
+                    parts = base_order_id.split('_')
+                    if len(parts) >= 2:
+                        try:
+                            base_payment_id = int(parts[0])
+                            payment_model = PaymentModel.objects.filter(payment_id=base_payment_id).first()
+                            if payment_model:
+                                logger.info(f"Найден платеж #{base_payment_id} по order_id={order_id} для обработки webhook")
+                                # Обновляем antilopay_payment_id если он не установлен
+                                if not payment_model.antilopay_payment_id:
+                                    payment_model.antilopay_payment_id = payment_id_ap
+                                    payment_model.save()
+                        except (ValueError, TypeError) as e:
+                            logger.warning(f"Не удалось преобразовать base_payment_id из order_id={order_id}: {e}")
 
             if not payment_model:
                 logger.warning(f"Платеж с antilopay_payment_id={payment_id_ap} или order_id={order_id} не найден")
@@ -483,8 +532,18 @@ class AntilopayService:
             logger.info(f"Найден платеж: payment_id={payment_model.payment_id}, user_id={payment_model.user.user_id}")
 
             if status == 'SUCCESS':
+                # ЗАЩИТА ОТ ДУБЛИРОВАНИЯ: Проверяем, не был ли уже обработан этот webhook
                 if payment_model.status == 'succeeded':
-                    logger.info(f"Платеж {payment_model.payment_id} уже обработан")
+                    logger.info(f"Платеж {payment_model.payment_id} уже обработан (статус succeeded)")
+                    return True
+                
+                # Дополнительная проверка по antilopay_payment_id на случай гонки вебхуков
+                existing_with_same_ap_id = PaymentModel.objects.filter(
+                    antilopay_payment_id=payment_id_ap,
+                    status='succeeded'
+                ).exclude(payment_id=payment_model.payment_id).first()
+                if existing_with_same_ap_id:
+                    logger.warning(f"Обнаружен дубликат webhook для antilopay_payment_id={payment_id_ap}. Платеж #{existing_with_same_ap_id.payment_id} уже обработан. Пропускаем обработку платежа #{payment_model.payment_id}")
                     return True
 
                 is_binding = (amount is not None and float(amount) == 0)
@@ -569,9 +628,31 @@ class AntilopayService:
 
             logger.info(f"Обрабатываем рекуррентный платёж: original_payment=#{original_payment.payment_id}, new_payment_id={new_payment_id_ap}")
 
+            # ЗАЩИТА ОТ ДУБЛИРОВАНИЯ: Проверяем, не был ли уже обработан этот webhook
+            existing_payment = PaymentModel.objects.filter(
+                antilopay_payment_id=new_payment_id_ap
+            ).first()
+            if existing_payment:
+                logger.info(f"Платеж с antilopay_payment_id={new_payment_id_ap} уже существует (#{existing_payment.payment_id}), пропускаем обработку")
+                if existing_payment.status == 'pending':
+                    # Если платеж в pending, пытаемся подтвердить его
+                    from .services import PaymentService
+                    payment_service = PaymentService()
+                    payment_service.confirm_payment(existing_payment)
+                    existing_payment.refresh_from_db()
+                return True
+
             amount = callback_data.get('original_amount', original_payment.amount)
             subscription_type = original_payment.subscription_type
             vpn_type = original_payment.vpn_type
+            
+            # Если в callback есть amount, используем его (для реальных платежей)
+            if callback_data.get('amount'):
+                try:
+                    amount = float(callback_data.get('amount'))
+                    logger.info(f"Используем amount из callback: {amount}")
+                except (ValueError, TypeError):
+                    pass
 
             duration_map = {
                 'trial': 1, 'week': 7, 'month': 30, '3months': 90,
@@ -599,13 +680,20 @@ class AntilopayService:
                 status='succeeded'
             ).order_by('-created_at').first()
 
+            # Вычисляем profit (аналогично PlategaService)
+            # Для рекуррентных платежей используем ту же логику: profit = amount - комиссия
+            # Комиссия Antilopay для СБП ~2.5% (уточните в документации)
+            commission_rate = 0.025  # 2.5%
+            calculated_profit = max(0, int(amount * (1 - commission_rate)))
+            logger.info(f"Расчет profit для рекуррентного платежа: amount={amount}, commission={commission_rate*100}%, profit={calculated_profit}")
+
             if last_with_key:
                 # Последующие рекуррентные списания — продлеваем существующий ключ
                 new_payment = PaymentModel.objects.create(
                     user=original_payment.user,
                     vpn_type=vpn_type,
-                    amount=amount,
-                    profit=0,
+                    amount=int(amount),
+                    profit=calculated_profit,
                     status='pending',
                     subscription_type=subscription_type,
                     antilopay_payment_id=new_payment_id_ap,
@@ -644,8 +732,8 @@ class AntilopayService:
                 new_payment = PaymentModel.objects.create(
                     user=original_payment.user,
                     vpn_type=vpn_type,
-                    amount=amount,
-                    profit=0,
+                    amount=int(amount),
+                    profit=calculated_profit,
                     status='pending',
                     subscription_type=subscription_type,
                     antilopay_payment_id=new_payment_id_ap,

@@ -9,15 +9,14 @@ __pycache__/
 .venv/
 venv/
 env/
-requirements.txt.bak
-
-# Logs
-*.log
-
-# Environment
 .env
 .env.local
 .env.*
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
 
 # Editors
 .vscode/
@@ -25,19 +24,19 @@ requirements.txt.bak
 *.swp
 *.swo
 
-# Build artifacts
-dist/
-build/
-*.egg-info/
+# Logs
+*.log
 
 # Coverage
 .coverage
-htmlcov/
 coverage/
+htmlcov/
 
-# Temporary files
+# Temp files
 *.tmp
-*~
+*.temp
+
+# OS
 .DS_Store
 Thumbs.db
 ```
