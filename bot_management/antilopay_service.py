@@ -164,10 +164,17 @@ class AntilopayService:
                 },
             }
 
+            # Логирование параметров рекуррентного платежа для отладки
+            is_binding_payment = (float(payment_model.amount) == 0)
+            if is_binding_payment:
+                logger.info(f"🔒 Создание RECURRENT привязки карты: payment_id={payment_model.payment_id}, delay={delay} дней, delay_type=DAY, category=SUBSCRIPTION")
+
             body = json.dumps(body_dict, separators=(',', ':'))
             headers = AntilopayService._headers(body)
 
             logger.info(f"Создание платежа Antilopay: payment_id={payment_model.payment_id}, amount={payment_model.amount}, order_id={unique_order_id}")
+            if is_binding_payment:
+                logger.info(f"🔒 Платёж для привязки карты (amount=0), рекуррент будет создан с delay={delay} дней")
 
             response = requests.post(
                 f'{ANTILOPAY_BASE_URL}/payment/create',
@@ -206,6 +213,8 @@ class AntilopayService:
                 payment_model.save()
 
                 logger.info(f"Создан платеж Antilopay {payment_id_ap} для платежа {payment_model.payment_id}")
+                if is_binding_payment and recurrent_id:
+                    logger.info(f"✅ RECURRENT создан: recurrent_id={recurrent_id}, order_id={unique_order_id}. Ожидается оплата пользователем для активации.")
 
                 return {
                     'payment_id': payment_id_ap,
@@ -214,6 +223,7 @@ class AntilopayService:
                     'amount': payment_model.amount,
                     'currency': 'RUB',
                     'description': description,
+                    'recurrent_id': recurrent_id,  # Возвращаем recurrent_id для отладки
                 }
             else:
                 error_text = response.text
@@ -555,7 +565,7 @@ class AntilopayService:
                     if recurrent_id:
                         payment_model.antilopay_recurrent_id = recurrent_id
                         payment_model.save()
-                        logger.info(f"Сохранён recurrent_id={recurrent_id} для платежа {payment_model.payment_id}")
+                        logger.info(f"✅ Карта успешно привязана! Payment #{payment_model.payment_id}, recurrent_id={recurrent_id}, order_id={order_id}")
 
                     # Проверяем статус рекуррента сразу
                     try:
@@ -563,7 +573,9 @@ class AntilopayService:
                         if recurrent_status_data:
                             r_status = recurrent_status_data.get('status', '')
                             logger.info(f"Статус рекуррента после binding: {r_status}")
-                            if r_status in ('CANCEL', 'PROVIDER_CANCEL', 'ERROR'):
+                            if r_status == 'ACTIVE':
+                                logger.info(f"✅ Рекуррент {recurrent_id} активен — через сутки произойдет автосписание (при наличии средств)")
+                            elif r_status in ('CANCEL', 'PROVIDER_CANCEL', 'ERROR'):
                                 logger.warning(f"Рекуррент {recurrent_id} в статусе {r_status} — связка не удалась. Платеж обработан как разовый.")
                                 # Antilopay мог обработать SBP как разовый платёж — пробуем проверить
                                 check_data = AntilopayService.check_payment(ANTILOPAY_PROJECT_ID, str(payment_model.payment_id))
@@ -577,6 +589,8 @@ class AntilopayService:
                                             payment_model.refresh_from_db()
                                             AntilopayService._notify_user(payment_model)
                                         return result
+                            else:
+                                logger.warning(f"Рекуррент {recurrent_id} в промежуточном статусе {r_status} — ожидаем перехода в ACTIVE для гарантии списания")
                     except Exception as e:
                         logger.error(f"Ошибка проверки статуса рекуррента при binding: {e}")
 
