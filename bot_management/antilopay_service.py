@@ -459,7 +459,9 @@ class AntilopayService:
                         if recurrent_status_data:
                             r_status = recurrent_status_data.get('status', '')
                             logger.info(f"Статус рекуррента перед выдачей товара: {r_status}")
-                            if r_status in ('ACTIVE', 'WAIT_CONFIRM', 'PROCESSING', 'CREATED'):
+                            # Выдаём товар только если рекуррент полностью активен (ACTIVE)
+                            # WAIT_CONFIRM, PROCESSING, CREATED — промежуточные статусы, нет гарантии списания
+                            if r_status == 'ACTIVE':
                                 return AntilopayService._handle_recurrent_payment_success(
                                     original_payment, payment_id_ap, callback_data, skip_notification
                                 )
@@ -467,7 +469,7 @@ class AntilopayService:
                                 logger.warning(f"Рекуррент {recurrent_id} в статусе {r_status} — товар не выдаём")
                                 return False
                             else:
-                                logger.warning(f"Неизвестный статус рекуррента: {r_status}")
+                                logger.warning(f"Рекуррент {recurrent_id} в промежуточном статусе {r_status} — ждём ACTIVE")
                                 return False
                         else:
                             logger.error(f"Не удалось получить статус рекуррента {recurrent_id}")

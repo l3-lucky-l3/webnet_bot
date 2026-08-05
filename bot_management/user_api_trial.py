@@ -141,6 +141,36 @@ def issue_trial_key(request, user_id):
             # Получаем antilopay_recurrent_id из запроса (если есть)
             recurrent_id = data.get('antilopay_recurrent_id')
 
+            # ВАЖНО: Пробный ключ выдается ТОЛЬКО при успешной привязке карты
+            # Проверяем, что рекуррентный платеж активен
+            if not recurrent_id:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Требуется привязка карты для получения пробного ключа'
+                })
+
+            # Проверяем статус рекуррентного платежа через Antilopay API
+            from .antilopay_service import AntilopayService
+            recurrent_status = AntilopayService.check_recurrent_payment_status(recurrent_id)
+            
+            if not recurrent_status:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Не удалось проверить статус привязки карты'
+                })
+            
+            r_status = recurrent_status.get('status', '')
+            logger.info(f"Статус рекуррента {recurrent_id}: {r_status}")
+            
+            # Разрешаем выдачу ключа ТОЛЬКО если рекуррент полностью активен (ACTIVE)
+            # WAIT_CONFIRM — промежуточный статус, нет гарантии активации рекуррента
+            # ACTIVE — рекуррент точно активен и списание произойдет через delay дней
+            if r_status != 'ACTIVE':
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Карта еще не привязана. Статус: {r_status}. Пожалуйста, завершите привязку карты.'
+                })
+
             # Создаем платеж для пробного ключа со статусом pending
             # Для regular VPN используем subscription_type='regular_trial'
             payment_subscription_type = 'regular_trial' if vpn_type == 'regular' else ('fast_trial' if vpn_type == 'fast' else 'trial')
