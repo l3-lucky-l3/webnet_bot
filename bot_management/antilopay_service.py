@@ -138,9 +138,9 @@ class AntilopayService:
                         }
                 logger.info(f"Существующий платеж в терминальном статусе, создаем новый с order_id={payment_model.payment_id}")
 
-                # ВАЖНО: order_id должен быть уникальным, но содержать payment_id для поиска
-                # Формат: "{payment_id}_{timestamp}" - это позволяет найти платеж по payment_id при обработке webhook
-                unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
+            # ВАЖНО: order_id должен быть уникальным, но содержать payment_id для поиска
+            # Формат: "{payment_id}_{timestamp}" - это позволяет найти платеж по payment_id при обработке webhook
+            unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
             
             body_dict = {
                 'project_identificator': ANTILOPAY_PROJECT_ID,
