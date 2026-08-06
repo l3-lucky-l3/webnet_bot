@@ -136,10 +136,11 @@ class AntilopayService:
                             'currency': 'RUB',
                             'description': description,
                         }
-                logger.info(f"Существующий платеж в терминальном статусе, пробуем создать новый с уникальным order_id")
+                logger.info(f"Существующий платеж в терминальном статусе, создаем новый с order_id={payment_model.payment_id}")
 
-            # Для избежания дублирования order_id используем уникальный идентификатор
-            unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S')}"
+                # ВАЖНО: order_id должен быть уникальным, но содержать payment_id для поиска
+                # Формат: "{payment_id}_{timestamp}" - это позволяет найти платеж по payment_id при обработке webhook
+                unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
             
             body_dict = {
                 'project_identificator': ANTILOPAY_PROJECT_ID,
@@ -208,6 +209,7 @@ class AntilopayService:
 
                 payment_model.antilopay_payment_id = payment_id_ap
                 payment_model.antilopay_payment_url = payment_url
+                payment_model.antilopay_order_id = unique_order_id  # Сохраняем order_id для поиска
                 if recurrent_id:
                     payment_model.antilopay_recurrent_id = recurrent_id
                 payment_model.save()
@@ -412,15 +414,26 @@ class AntilopayService:
 
             logger.info(f"Обработка callback: payment_id_ap={payment_id_ap}, order_id={order_id}, status={status}, recurrent_id={recurrent_id}")
 
-            # Ищем платеж по antilopay_payment_id или order_id
+            # Ищем платеж по antilopay_payment_id или antilopay_order_id
             payment_model = PaymentModel.objects.filter(
                 antilopay_payment_id=payment_id_ap
             ).first()
 
             if not payment_model:
+                # Пробуем найти по order_id (он сохраняется в antilopay_order_id)
+                logger.debug(
+                    f"Платеж не найден по antilopay_payment_id={payment_id_ap}, пробуем поиск по order_id={order_id}")
+                payment_model = PaymentModel.objects.filter(
+                    antilopay_order_id=order_id
+                ).first()
+                if payment_model:
+                    logger.info(f"Найден платеж #{payment_model.payment_id} по antilopay_order_id={order_id}")
+
+            if not payment_model:
                 # order_id может быть в формате "{payment_id}_{timestamp}" или "{payment_id}_{timestamp}_R1"
                 # Извлекаем базовый payment_id из order_id
                 base_order_id = order_id
+                logger.debug(f"Платеж не найден по order_id, пробуем извлечь payment_id из order_id={order_id}")
                 logger.debug(f"Платеж не найден по antilopay_payment_id={payment_id_ap}, пробуем извлечь из order_id={order_id}")
                 
                 if '_R' in order_id:
