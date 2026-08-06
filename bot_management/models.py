@@ -327,6 +327,7 @@ class Payment(models.Model):
 
     # Antilopay поля
     antilopay_payment_id = models.CharField(max_length=255, null=True, blank=True, unique=True, db_index=True)
+    antilopay_order_id = models.CharField(max_length=255, null=True, blank=True, db_index=True, verbose_name='Order ID Antilopay', help_text='Уникальный идентификатор заказа для вебхуков')
     antilopay_payment_url = models.URLField(null=True, blank=True)
     antilopay_recurrent_id = models.CharField(max_length=255, null=True, blank=True, db_index=True, verbose_name='ID рекуррента Antilopay', help_text='Идентификатор рекуррентного платежа для автосписания')
 
