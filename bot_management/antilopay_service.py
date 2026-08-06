@@ -142,7 +142,10 @@ class AntilopayService:
             # Формат: "{payment_id}_{timestamp}" - это позволяет найти платеж по payment_id при обработке webhook
             unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
             
-            logger.info(f"🚀 [CREATE_PAYMENT] Start for payment_id={payment_model.payment_id}. Type: {'BINDING' if is_binding_payment else 'NORMAL'}")
+            # Определяем тип платежа: BINDING если amount=0 (привязка карты для пробника), иначе NORMAL
+            is_binding = payment_model.amount == 0
+            
+            logger.info(f"🚀 [CREATE_PAYMENT] Start for payment_id={payment_model.payment_id}. Type: {'BINDING' if is_binding else 'NORMAL'}")
             logger.info(f"🆔 [CREATE_PAYMENT] Generated unique_order_id: {unique_order_id}")
             
             body_dict = {
