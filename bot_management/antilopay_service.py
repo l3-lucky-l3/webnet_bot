@@ -142,6 +142,9 @@ class AntilopayService:
             # Формат: "{payment_id}_{timestamp}" - это позволяет найти платеж по payment_id при обработке webhook
             unique_order_id = f"{payment_model.payment_id}_{timezone.now().strftime('%Y%m%d%H%M%S%f')}"
             
+            logger.info(f"🚀 [CREATE_PAYMENT] Start for payment_id={payment_model.payment_id}. Type: {'BINDING' if is_binding_payment else 'NORMAL'}")
+            logger.info(f"🆔 [CREATE_PAYMENT] Generated unique_order_id: {unique_order_id}")
+            
             body_dict = {
                 'project_identificator': ANTILOPAY_PROJECT_ID,
                 'amount': float(payment_model.amount),
@@ -166,16 +169,16 @@ class AntilopayService:
             }
 
             # Логирование параметров рекуррентного платежа для отладки
-            is_binding_payment = (float(payment_model.amount) == 0)
             if is_binding_payment:
-                logger.info(f"🔒 Создание RECURRENT привязки карты: payment_id={payment_model.payment_id}, delay={delay} дней, delay_type=DAY, category=SUBSCRIPTION")
+                logger.info(f"🔒 [CREATE_PAYMENT] RECURRENT привязка карты: payment_id={payment_model.payment_id}, delay={delay} дней, delay_type=DAY, category=SUBSCRIPTION")
+                logger.info(f"📋 [CREATE_PAYMENT] Recurrent params: type={body_dict['recurrent']['type']}, payment_count={body_dict['recurrent']['payment_count']}, delay={body_dict['recurrent']['delay']}")
 
             body = json.dumps(body_dict, separators=(',', ':'))
             headers = AntilopayService._headers(body)
 
-            logger.info(f"Создание платежа Antilopay: payment_id={payment_model.payment_id}, amount={payment_model.amount}, order_id={unique_order_id}")
+            logger.info(f"💳 [CREATE_PAYMENT] Creating Antilopay payment: payment_id={payment_model.payment_id}, amount={payment_model.amount}, order_id={unique_order_id}")
             if is_binding_payment:
-                logger.info(f"🔒 Платёж для привязки карты (amount=0), рекуррент будет создан с delay={delay} дней")
+                logger.info(f"🔒 [CREATE_PAYMENT] Платёж для привязки карты (amount=0), рекуррент будет создан с delay={delay} дней")
 
             response = requests.post(
                 f'{ANTILOPAY_BASE_URL}/payment/create',
@@ -214,9 +217,10 @@ class AntilopayService:
                     payment_model.antilopay_recurrent_id = recurrent_id
                 payment_model.save()
 
-                logger.info(f"Создан платеж Antilopay {payment_id_ap} для платежа {payment_model.payment_id}")
+                logger.info(f"💾 [CREATE_PAYMENT] Saved to DB: payment_id={payment_model.payment_id}, antilopay_payment_id={payment_id_ap}, antilopay_order_id={unique_order_id}, recurrent_id={recurrent_id}")
+                logger.info(f"✅ [CREATE_PAYMENT] Success! Antilopay ID: {payment_id_ap}, Order ID: {unique_order_id}")
                 if is_binding_payment and recurrent_id:
-                    logger.info(f"✅ RECURRENT создан: recurrent_id={recurrent_id}, order_id={unique_order_id}. Ожидается оплата пользователем для активации.")
+                    logger.info(f"✅ [CREATE_PAYMENT] RECURRENT создан: recurrent_id={recurrent_id}, order_id={unique_order_id}. Ожидается оплата пользователем для активации.")
 
                 return {
                     'payment_id': payment_id_ap,
@@ -395,11 +399,12 @@ class AntilopayService:
             True если обработка успешна
         """
         try:
-            logger.info(f"Получен callback от Antilopay: {callback_data}")
+            logger.info(f"📩 [WEBHOOK] Received callback from Antilopay")
+            logger.info(f"📩 [WEBHOOK] Full callback data: {callback_data}")
 
             type_field = callback_data.get('type')
             if type_field != 'payment':
-                logger.info(f"Antilopay callback type не payment: {type_field}, пропускаем")
+                logger.info(f"⏭️ [WEBHOOK] Callback type не payment: {type_field}, пропускаем")
                 return False
 
             payment_id_ap = callback_data.get('payment_id')
@@ -408,63 +413,68 @@ class AntilopayService:
             recurrent_id = callback_data.get('recurrent_id')
             amount = callback_data.get('amount')
 
+            logger.info(f"🔍 [WEBHOOK] Parsing callback:")
+            logger.info(f"   🆔 payment_id (Antilopay): {payment_id_ap}")
+            logger.info(f"   🆔 order_id (merchant): {order_id}")
+            logger.info(f"   🔄 status: {status}")
+            logger.info(f"   🔁 recurrent_id: {recurrent_id}")
+            logger.info(f"   💵 amount: {amount}")
+
             if not payment_id_ap or not status:
-                logger.error(f"Недостаточно данных в callback: payment_id={payment_id_ap}, status={status}")
+                logger.error(f"❌ [WEBHOOK] Недостаточно данных в callback: payment_id={payment_id_ap}, status={status}")
                 return False
 
-            logger.info(f"Обработка callback: payment_id_ap={payment_id_ap}, order_id={order_id}, status={status}, recurrent_id={recurrent_id}")
-
             # Ищем платеж по antilopay_payment_id или antilopay_order_id
+            logger.info(f"🔍 [WEBHOOK] Searching for payment in DB...")
             payment_model = PaymentModel.objects.filter(
                 antilopay_payment_id=payment_id_ap
             ).first()
 
             if not payment_model:
                 # Пробуем найти по order_id (он сохраняется в antilopay_order_id)
-                logger.debug(
-                    f"Платеж не найден по antilopay_payment_id={payment_id_ap}, пробуем поиск по order_id={order_id}")
+                logger.info(f"⚠️ [WEBHOOK] Платеж не найден по antilopay_payment_id={payment_id_ap}, пробуем поиск по order_id={order_id}")
                 payment_model = PaymentModel.objects.filter(
                     antilopay_order_id=order_id
                 ).first()
                 if payment_model:
-                    logger.info(f"Найден платеж #{payment_model.payment_id} по antilopay_order_id={order_id}")
+                    logger.info(f"✅ [WEBHOOK] Найден платеж #{payment_model.payment_id} по antilopay_order_id={order_id}")
+                else:
+                    logger.info(f"⚠️ [WEBHOOK] Платеж не найден по antilopay_order_id={order_id}")
 
             if not payment_model:
                 # order_id может быть в формате "{payment_id}_{timestamp}" или "{payment_id}_{timestamp}_R1"
                 # Извлекаем базовый payment_id из order_id
                 base_order_id = order_id
-                logger.debug(f"Платеж не найден по order_id, пробуем извлечь payment_id из order_id={order_id}")
-                logger.debug(f"Платеж не найден по antilopay_payment_id={payment_id_ap}, пробуем извлечь из order_id={order_id}")
+                logger.info(f"🔍 [WEBHOOK] Платеж не найден по order_id, пробуем извлечь payment_id из order_id={order_id}")
                 
                 if '_R' in order_id:
                     # Рекуррентный платёж: "69017_20260802221111_R1" -> "69017_20260802221111"
                     base_order_id = order_id.split('_R')[0]
-                    logger.debug(f"Удалён суффикс рекуррента, base_order_id={base_order_id}")
+                    logger.info(f"✂️ [WEBHOOK] Удалён суффикс рекуррента, base_order_id={base_order_id}")
                     
                 if '_' in base_order_id:
                     # Уникальный order_id с timestamp: "69017_20260802221111" -> "69017"
                     parts = base_order_id.split('_')
                     if len(parts) >= 2:
                         # Первый элемент - это payment_id
-                        base_order_id = parts[0]
-                        logger.debug(f"Извлечён payment_id из order_id: {base_order_id} (parts={parts})")
+                        extracted_payment_id = parts[0]
+                        logger.info(f"✂️ [WEBHOOK] Извлечён payment_id из order_id: {extracted_payment_id} (parts={parts})")
+                        base_order_id = extracted_payment_id
                 
                 # Преобразуем в integer для поиска по AutoField
                 try:
                     base_payment_id = int(base_order_id)
-                    logger.debug(f"Поиск платежа по payment_id={base_payment_id} (из order_id={order_id})")
+                    logger.info(f"🔍 [WEBHOOK] Поиск платежа по payment_id={base_payment_id} (из order_id={order_id})")
                     payment_model = PaymentModel.objects.filter(
                         payment_id=base_payment_id
                     ).first()
                     if payment_model:
-                        logger.info(f"Найден платеж #{base_payment_id} по order_id={order_id}")
+                        logger.info(f"✅ [WEBHOOK] Найден платеж #{base_payment_id} по order_id={order_id}")
+                    else:
+                        logger.warning(f"❌ [WEBHOOK] Платеж #{base_payment_id} не найден в БД")
                 except (ValueError, TypeError) as e:
-                    logger.warning(f"Не удалось преобразовать order_id={order_id} в integer: {e}")
+                    logger.warning(f"❌ [WEBHOOK] Не удалось преобразовать order_id={order_id} в integer: {e}")
                     payment_model = None
-                
-                if not payment_model and base_order_id != order_id:
-                    # Пробуем также найти по полному order_id (на случай если payment_id содержит подчёркивания)
-                    logger.debug(f"Поиск по полному order_id={order_id} не требуется, payment_id - целое число")
 
             # Если это рекуррентный платёж (новый payment_id, но есть recurrent_id)
             if not payment_model and recurrent_id:
@@ -551,15 +561,16 @@ class AntilopayService:
                             logger.warning(f"Не удалось преобразовать base_payment_id из order_id={order_id}: {e}")
 
             if not payment_model:
-                logger.warning(f"Платеж с antilopay_payment_id={payment_id_ap} или order_id={order_id} не найден")
+                logger.warning(f"❌ [WEBHOOK] Платеж с antilopay_payment_id={payment_id_ap} или order_id={order_id} не найден")
                 return False
 
-            logger.info(f"Найден платеж: payment_id={payment_model.payment_id}, user_id={payment_model.user.user_id}")
+            logger.info(f"✅ [WEBHOOK] Найден платеж: payment_id={payment_model.payment_id}, user_id={payment_model.user.user_id}")
+            logger.info(f"📊 [WEBHOOK] Current DB state: status={payment_model.status}, antilopay_payment_id={payment_model.antilopay_payment_id}, antilopay_order_id={payment_model.antilopay_order_id}, recurrent_id={payment_model.antilopay_recurrent_id}")
 
             if status == 'SUCCESS':
                 # ЗАЩИТА ОТ ДУБЛИРОВАНИЯ: Проверяем, не был ли уже обработан этот webhook
                 if payment_model.status == 'succeeded':
-                    logger.info(f"Платеж {payment_model.payment_id} уже обработан (статус succeeded)")
+                    logger.info(f"⚠️ [WEBHOOK] Платеж {payment_model.payment_id} уже обработан (статус succeeded)")
                     return True
                 
                 # Дополнительная проверка по antilopay_payment_id на случай гонки вебхуков
@@ -568,44 +579,45 @@ class AntilopayService:
                     status='succeeded'
                 ).exclude(payment_id=payment_model.payment_id).first()
                 if existing_with_same_ap_id:
-                    logger.warning(f"Обнаружен дубликат webhook для antilopay_payment_id={payment_id_ap}. Платеж #{existing_with_same_ap_id.payment_id} уже обработан. Пропускаем обработку платежа #{payment_model.payment_id}")
+                    logger.warning(f"⚠️ [WEBHOOK] Обнаружен дубликат webhook для antilopay_payment_id={payment_id_ap}. Платеж #{existing_with_same_ap_id.payment_id} уже обработан. Пропускаем обработку платежа #{payment_model.payment_id}")
                     return True
 
                 is_binding = (amount is not None and float(amount) == 0)
+                logger.info(f"💵 [WEBHOOK] Checking if binding: amount={amount}, is_binding={is_binding}")
 
                 if is_binding:
-                    logger.info(f"Платеж {payment_model.payment_id} — привязка SUBSCRIPTION (amount=0)")
+                    logger.info(f"🔒 [WEBHOOK] Платеж {payment_model.payment_id} — привязка SUBSCRIPTION (amount=0)")
                     if recurrent_id:
                         payment_model.antilopay_recurrent_id = recurrent_id
                         payment_model.save()
-                        logger.info(f"✅ Карта успешно привязана! Payment #{payment_model.payment_id}, recurrent_id={recurrent_id}, order_id={order_id}")
+                        logger.info(f"✅ [WEBHOOK] Карта успешно привязана! Payment #{payment_model.payment_id}, recurrent_id={recurrent_id}, order_id={order_id}")
 
                     # Проверяем статус рекуррента сразу
                     try:
                         recurrent_status_data = AntilopayService.check_recurrent_payment_status(recurrent_id)
                         if recurrent_status_data:
                             r_status = recurrent_status_data.get('status', '')
-                            logger.info(f"Статус рекуррента после binding: {r_status}")
+                            logger.info(f"🔄 [WEBHOOK] Статус рекуррента после binding: {r_status}")
                             if r_status == 'ACTIVE':
-                                logger.info(f"✅ Рекуррент {recurrent_id} активен — через сутки произойдет автосписание (при наличии средств)")
+                                logger.info(f"✅ [WEBHOOK] Рекуррент {recurrent_id} активен — через сутки произойдет автосписание (при наличии средств)")
                             elif r_status in ('CANCEL', 'PROVIDER_CANCEL', 'ERROR'):
-                                logger.warning(f"Рекуррент {recurrent_id} в статусе {r_status} — связка не удалась. Платеж обработан как разовый.")
+                                logger.warning(f"⚠️ [WEBHOOK] Рекуррент {recurrent_id} в статусе {r_status} — связка не удалась. Платеж обработан как разовый.")
                                 # Antilopay мог обработать SBP как разовый платёж — пробуем проверить
                                 check_data = AntilopayService.check_payment(ANTILOPAY_PROJECT_ID, str(payment_model.payment_id))
                                 if check_data:
                                     ap_amount = check_data.get('amount', 0)
                                     ap_status = check_data.get('status', '')
                                     if ap_status == 'SUCCESS' and float(ap_amount) > 0:
-                                        logger.info(f"Платёж {payment_model.payment_id} успешен как разовой (amount={ap_amount}), выдаём ключ")
+                                        logger.info(f"💰 [WEBHOOK] Платёж {payment_model.payment_id} успешен как разовой (amount={ap_amount}), выдаём ключ")
                                         result = AntilopayService._handle_payment_success(payment_model, skip_notification=skip_notification)
                                         if result:
                                             payment_model.refresh_from_db()
                                             AntilopayService._notify_user(payment_model)
                                         return result
                             else:
-                                logger.warning(f"Рекуррент {recurrent_id} в промежуточном статусе {r_status} — ожидаем перехода в ACTIVE для гарантии списания")
+                                logger.warning(f"⏳ [WEBHOOK] Рекуррент {recurrent_id} в промежуточном статусе {r_status} — ожидаем перехода в ACTIVE для гарантии списания")
                     except Exception as e:
-                        logger.error(f"Ошибка проверки статуса рекуррента при binding: {e}")
+                        logger.error(f"❌ [WEBHOOK] Ошибка проверки статуса рекуррента при binding: {e}")
 
                     return True
 
