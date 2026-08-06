@@ -1610,7 +1610,11 @@ def check_antilopay_payment_status(request, payment_id):
     try:
         payment = Payment.objects.get(payment_id=payment_id)
 
+        logger.info(f"🧐 [CHECK_STATUS] User checking status for payment_id={payment_id}")
+        logger.info(f"📊 [CHECK_STATUS] DB state: status={payment.status}, antilopay_payment_id={payment.antilopay_payment_id}, antilopay_order_id={payment.antilopay_order_id}, recurrent_id={payment.antilopay_recurrent_id}")
+
         if not payment.antilopay_payment_id:
+            logger.warning(f"❌ [CHECK_STATUS] У платежа {payment_id} нет antilopay_payment_id")
             return JsonResponse({
                 'success': False,
                 'message': 'У платежа нет antilopay_payment_id'
@@ -1619,16 +1623,27 @@ def check_antilopay_payment_status(request, payment_id):
         from .antilopay_service import AntilopayService
         from config import ANTILOPAY_PROJECT_ID
 
-        antilopay_status = AntilopayService.check_payment(ANTILOPAY_PROJECT_ID, str(payment.payment_id))
+        # Используем order_id для проверки (он уникален и содержит payment_id)
+        order_id_to_check = payment.antilopay_order_id or str(payment.payment_id)
+        logger.info(f"🔍 [CHECK_STATUS] Checking Antilopay status with order_id={order_id_to_check}")
+        antilopay_status = AntilopayService.check_payment(ANTILOPAY_PROJECT_ID, order_id_to_check)
 
         if not antilopay_status:
+            logger.error(f"❌ [CHECK_STATUS] Не удалось получить статус от Antilopay для order_id={order_id_to_check}")
             return JsonResponse({
                 'success': False,
                 'message': 'Не удалось получить статус от Antilopay'
             }, status=500)
 
+        logger.info(f"📩 [CHECK_STATUS] Antilopay response: {antilopay_status}")
+        
         ap_status = antilopay_status.get('status', 'unknown')
         ap_status_normalized = ap_status.upper() if ap_status else 'UNKNOWN'
+        ap_order_id = antilopay_status.get('order_id')
+        ap_amount = antilopay_status.get('amount')
+        ap_recurrent_id = antilopay_status.get('recurrent_id')
+
+        logger.info(f"📊 [CHECK_STATUS] Antilopay status details: status={ap_status}, order_id={ap_order_id}, amount={ap_amount}, recurrent_id={ap_recurrent_id}")
 
         # Сохраняем recurrent_id из ответа check_payment если есть
         ap_recurrent_id = antilopay_status.get('recurrent_id') or antilopay_status.get('recurrent_id')
