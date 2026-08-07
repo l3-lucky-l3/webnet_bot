@@ -601,8 +601,18 @@ class AntilopayService:
                         if recurrent_status_data:
                             r_status = recurrent_status_data.get('status', '')
                             logger.info(f"🔄 [WEBHOOK] Статус рекуррента после binding: {r_status}")
-                            if r_status == 'ACTIVE':
-                                logger.info(f"✅ [WEBHOOK] Рекуррент {recurrent_id} активен — через сутки произойдет автосписание (при наличии средств)")
+                            
+                            # Выдаём пробный ключ при WAIT_CONFIRM или ACTIVE
+                            # WAIT_CONFIRM = карта привязана, пользователь подтвердил, ожидает первое списание через delay дней
+                            # ACTIVE = рекуррент полностью активен
+                            if r_status in ('WAIT_CONFIRM', 'ACTIVE'):
+                                logger.info(f"✅ [WEBHOOK] Рекуррент {recurrent_id} в статусе {r_status} — выдаём пробный ключ на 3 дня")
+                                # Выдаём пробный ключ
+                                result = AntilopayService._handle_payment_success(payment_model, skip_notification=False)
+                                if result:
+                                    payment_model.refresh_from_db()
+                                    AntilopayService._notify_user(payment_model)
+                                return result
                             elif r_status in ('CANCEL', 'PROVIDER_CANCEL', 'ERROR'):
                                 logger.warning(f"⚠️ [WEBHOOK] Рекуррент {recurrent_id} в статусе {r_status} — связка не удалась. Платеж обработан как разовый.")
                                 # Antilopay мог обработать SBP как разовый платёж — пробуем проверить
@@ -618,7 +628,7 @@ class AntilopayService:
                                             AntilopayService._notify_user(payment_model)
                                         return result
                             else:
-                                logger.warning(f"⏳ [WEBHOOK] Рекуррент {recurrent_id} в промежуточном статусе {r_status} — ожидаем перехода в ACTIVE для гарантии списания")
+                                logger.warning(f"⏳ [WEBHOOK] Рекуррент {recurrent_id} в промежуточном статусе {r_status} — ожидаем WAIT_CONFIRM или ACTIVE для выдачи пробного ключа")
                     except Exception as e:
                         logger.error(f"❌ [WEBHOOK] Ошибка проверки статуса рекуррента при binding: {e}")
 
