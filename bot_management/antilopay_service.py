@@ -607,8 +607,8 @@ class AntilopayService:
                             # ACTIVE = рекуррент полностью активен
                             if r_status in ('WAIT_CONFIRM', 'ACTIVE'):
                                 logger.info(f"✅ [WEBHOOK] Рекуррент {recurrent_id} в статусе {r_status} — выдаём пробный ключ на 3 дня")
-                                # Выдаём пробный ключ
-                                result = AntilopayService._handle_payment_success(payment_model, skip_notification=False)
+                                # Выдаём пробный ключ через специальную функцию для trial
+                                result = AntilopayService._handle_trial_payment_success(payment_model, skip_notification=False)
                                 if result:
                                     payment_model.refresh_from_db()
                                     AntilopayService._notify_user(payment_model)
@@ -804,6 +804,72 @@ class AntilopayService:
                     # Не прерываем процесс, если сброс трафика не удался
             else:
                 # Первый charge после SUBSCRIPTION binding — генерируем ключ
+                # Проверяем, является ли это первым платежом после пробного периода
+                # Если original_payment.subscription_type содержит 'trial', то это первое списание после пробника
+                is_first_charge_after_trial = 'trial' in original_payment.subscription_type
+                
+                if is_first_charge_after_trial:
+                    logger.info(f"Первое списание после пробного периода для пользователя {original_payment.user.user_id}. Продлеваем существующий пробный ключ на 30 дней.")
+                    # Находим активный пробный ключ пользователя и продлеваем его
+                    trial_payment = PaymentModel.objects.filter(
+                        user=original_payment.user,
+                        vpn_type=vpn_type,
+                        subscription_type__contains='trial',
+                        status='succeeded',
+                        issued_key__isnull=False
+                    ).order_by('-created_at').first()
+                    
+                    if trial_payment:
+                        # Продлеваем существующий пробный ключ на 30 дней
+                        new_payment = PaymentModel.objects.create(
+                            user=original_payment.user,
+                            vpn_type=vpn_type,
+                            amount=int(amount),
+                            profit=calculated_profit,
+                            status='pending',
+                            subscription_type=subscription_type,
+                            antilopay_payment_id=new_payment_id_ap,
+                            antilopay_recurrent_id=original_payment.antilopay_recurrent_id,
+                            issued_key=trial_payment.issued_key,
+                            subscription_expires_at=new_expires,
+                            is_renewal=True,
+                            renewal_for_payment=trial_payment,
+                            bypass_remnawave_uuid=trial_payment.bypass_remnawave_uuid,
+                            regular_vpn_remnawave_uuid=trial_payment.regular_vpn_remnawave_uuid,
+                            fgcn_key_id=trial_payment.fgcn_key_id,
+                            fgcn_tg_id=trial_payment.fgcn_tg_id,
+                            is_fgn_key=trial_payment.is_fgn_key,
+                        )
+                        from .services import PaymentService
+                        payment_service = PaymentService()
+                        # НЕ отправляем уведомление - это автопродление пробника
+                        success = payment_service.confirm_payment(new_payment, skip_notification=True)
+                        if not success:
+                            logger.error(f"Не удалось продлить пробный ключ для первого charge #{new_payment.payment_id}")
+                            return False
+                        new_payment.refresh_from_db()
+                        
+                        # Сбрасываем трафик
+                        try:
+                            from .remnawave_api import reset_user_traffic_by_short_uuid_sync
+                            key_info = trial_payment.issued_key
+                            if '/' in key_info:
+                                short_uuid = key_info.split('/')[-1]
+                            else:
+                                short_uuid = key_info
+                            
+                            logger.info(f"Сброс трафика для пользователя по ключу {short_uuid}")
+                            reset_user_traffic_by_short_uuid_sync(short_uuid)
+                            logger.info(f"Трафик успешно сброшен для {short_uuid}")
+                        except Exception as traffic_error:
+                            logger.error(f"Ошибка сброса трафика при продлении пробника: {traffic_error}")
+                        
+                        logger.info(f"Пробный период продлен на 30 дней: платеж #{new_payment.payment_id}, истекает {new_expires}")
+                        return True
+                    else:
+                        logger.warning(f"Не найден активный пробный ключ для пользователя {original_payment.user.user_id}. Создаем новый платеж.")
+                
+                # Стандартная логика для первого charge (не после пробника)
                 new_payment = PaymentModel.objects.create(
                     user=original_payment.user,
                     vpn_type=vpn_type,
