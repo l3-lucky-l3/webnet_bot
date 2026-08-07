@@ -451,3 +451,80 @@ async def create_antilopay_payment(user_id: int, subscription_type: str, return_
     except Exception as e:
         logger.error(f"Ошибка создания платежа Antilopay: {e}")
         return None
+
+
+async def create_referral_payment(user_id: int, subscription_type: str, return_url: str = None, amount: int = None, vpn_type: str = 'night') -> Optional[Dict[str, Any]]:
+    """Создание платежа через реферальный баланс API"""
+    try:
+        import aiohttp
+
+        # Определяем цену, если не передана
+        if amount is None:
+            try:
+                api_url = 'http://127.0.0.1:8123/bot_management/api/prices/get/'
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(api_url) as response:
+                        if response.status == 200:
+                            data = await response.json()
+                            prices = data.get('prices', {})
+                            amount = prices.get(subscription_type, 0)
+                            if amount == 0 and subscription_type.startswith('regular_'):
+                                regular_type = subscription_type.replace('regular_', '')
+                                amount = prices.get(regular_type, 0)
+                            elif amount == 0 and subscription_type.startswith('fast_'):
+                                fast_type = subscription_type.replace('fast_', '')
+                                amount = prices.get(fast_type, 0)
+                        else:
+                            from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+                            if subscription_type.startswith('regular_'):
+                                regular_type = subscription_type.replace('regular_', '')
+                                amount = ULTRA_FAST_VPN_PRICES.get(regular_type, 0)
+                            elif subscription_type.startswith('fast_'):
+                                fast_type = subscription_type.replace('fast_', '')
+                                amount = FAST_VPN_PRICES.get(fast_type, 0)
+                            else:
+                                amount = PRICES.get(subscription_type, 0)
+            except Exception as e:
+                logger.error(f"Ошибка получения цены из API: {e}")
+                from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+                if subscription_type.startswith('regular_'):
+                    regular_type = subscription_type.replace('regular_', '')
+                    amount = ULTRA_FAST_VPN_PRICES.get(regular_type, 0)
+                elif subscription_type.startswith('fast_'):
+                    fast_type = subscription_type.replace('fast_', '')
+                    amount = FAST_VPN_PRICES.get(fast_type, 0)
+                else:
+                    amount = PRICES.get(subscription_type, 0)
+
+        data = {
+            'user_id': user_id,
+            'subscription_type': subscription_type,
+            'amount': amount,
+            'vpn_type': vpn_type,
+        }
+
+        api_url = 'http://127.0.0.1:8123/bot_management/api/payments/create-referral/'
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(api_url, json=data) as response:
+                if response.status == 200:
+                    result = await response.json()
+                    if result.get('status') == 'success':
+                        return {
+                            'payment_id': result.get('payment_id'),
+                            'confirmation_url': result.get('confirmation_url', ''),
+                            'amount': result.get('amount'),
+                            'subscription_type': result.get('subscription_type'),
+                        }
+                    else:
+                        error_msg = result.get('message', 'Неизвестная ошибка')
+                        logger.error(f"Referral API error: {result}")
+                        return {'error': error_msg}
+                else:
+                    error_body = await response.text()
+                    logger.error(f"Referral HTTP ошибка {response.status}: {error_body[:500]}")
+                    return {'error': error_body[:300]}
+
+    except Exception as e:
+        logger.error(f"Ошибка создания платежа Referral: {e}")
+        return None
