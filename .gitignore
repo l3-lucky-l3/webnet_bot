@@ -1,1 +1,1 @@
-(bot_management/__pycache__/)
+Nothing should be ignored in this case, as the modified files are only source code files (.py) without any build artifacts, dependencies, or temporary files in the changes.

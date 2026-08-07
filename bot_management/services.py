@@ -843,8 +843,8 @@ class PaymentService:
         # Для обычного VPN используем соответствующие типы ключей
         if vpn_type == 'regular':
             # Обычный VPN: используем regular_* типы ключей
-            if subscription_type == 'trial':
-                key_type = 'regular_day'  # Пробный ключ для обычного VPN = 1 день
+            if subscription_type in ('trial', 'regular_trial'):
+                key_type = 'regular_trial'  # Пробный ключ для обычного VPN = 3 дня
             elif subscription_type == 'month':
                 key_type = 'regular_month'
             elif subscription_type == '3months':
@@ -855,9 +855,26 @@ class PaymentService:
                 key_type = 'regular_month'  # Выдаём месячный ключ
             else:
                 key_type = subscription_type
+        elif vpn_type == 'fast':
+            # Fast VPN: используем fast_* типы ключей
+            if subscription_type in ('trial', 'fast_trial'):
+                key_type = 'fast_trial'  # Пробный ключ для Fast VPN = 3 дня
+            elif subscription_type == 'month':
+                key_type = 'fast_month'
+            elif subscription_type == '3months':
+                key_type = 'fast_month'
+            elif subscription_type == '6months':
+                key_type = 'fast_month'
+            elif subscription_type == 'year':
+                key_type = 'fast_month'
+            else:
+                key_type = subscription_type
         else:
             # Night VPN: используем обычные типы
-            key_type = 'month' if subscription_type in ('3months', '6months', 'year') else subscription_type
+            if subscription_type == 'trial':
+                key_type = 'trial'  # Пробный ключ для Night VPN = 3 дня
+            else:
+                key_type = 'month' if subscription_type in ('3months', '6months', 'year') else subscription_type
         
         return SubscriptionKey.objects.filter(
             subscription_type=key_type,
