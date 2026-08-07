@@ -2469,6 +2469,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
 Верификация привязкой счёта отсекает агентов – они не могут каждый раз создавать новую карту. Результат: наши серверы стабильны, белые списки обходятся без перебоев.
 
 Мы не спишем ничего с этого счёта. После того, как привяжете счёт — вы автоматически получите <b>ПРОБНЫЙ ПЕРИОД — 3 ДНЯ 🔥</b>"""
+                            await asyncio.sleep(5)
                             await message.answer(trial_offer_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                                 [InlineKeyboardButton(text="💳 Получить пробный доступ", callback_data="trial_offer_get")],
                                 [InlineKeyboardButton(text="💬 Поддержка", url="https://t.me/yamalube61")]
