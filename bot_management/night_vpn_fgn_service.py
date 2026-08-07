@@ -84,12 +84,12 @@ SUBSCRIPTION_DURATION_MAP = {
 }
 
 TRAFFIC_LIMIT_MAP = {
-    'trial': 7,
-    'week': 20,
-    'month': 50,
-    '3months': 300,
-    '6months': 600,
-    'year': 1200,
+    'trial': 10,
+    'week': 120,
+    'month': 120,
+    '3months': 120,
+    '6months': 120,
+    'year': 120,
 }
 
 
@@ -435,12 +435,12 @@ FAST_VPN_DURATION_MAP = {
 }
 
 FAST_VPN_TRAFFIC_MAP = {
-    'trial': 50,
-    'week': 200,
-    'month': 512,
-    '3months': 3072,
-    '6months': 6144,
-    'year': 12288,
+    'trial': 10,
+    'week': 120,
+    'month': 120,
+    '3months': 120,
+    '6months': 120,
+    'year': 120,
 }
 
 
