@@ -718,11 +718,26 @@ class AntilopayService:
                 new_expires = now + timedelta(days=days)
 
             # Ищем последний платёж с ключом по этому recurrent_id
+            # ВАЖНО: для первого автосписания после пробника recurrent_id может отличаться,
+            # поэтому ищем также по user + vpn_type + subscription_type
             last_with_key = PaymentModel.objects.filter(
                 antilopay_recurrent_id=original_payment.antilopay_recurrent_id,
                 issued_key__isnull=False,
                 status='succeeded'
             ).order_by('-created_at').first()
+
+            # Если не нашли по recurrent_id (например, пробник был выдан до создания рекуррента),
+            # ищем последний успешный платёж пользователя с этим vpn_type и ключом
+            if not last_with_key:
+                logger.info(f"Не найдено платежей по recurrent_id={original_payment.antilopay_recurrent_id}, ищем по пользователю...")
+                last_with_key = PaymentModel.objects.filter(
+                    user=original_payment.user,
+                    vpn_type=vpn_type,
+                    issued_key__isnull=False,
+                    status='succeeded'
+                ).order_by('-created_at').first()
+                if last_with_key:
+                    logger.info(f"Найден последний платёж с ключом #{last_with_key.payment_id} для пользователя {original_payment.user.user_id}")
 
             # Вычисляем profit (аналогично PlategaService)
             # Для рекуррентных платежей используем ту же логику: profit = amount - комиссия
@@ -746,10 +761,16 @@ class AntilopayService:
                     subscription_expires_at=new_expires,
                     is_renewal=True,
                     renewal_for_payment=last_with_key,
+                    bypass_remnawave_uuid=last_with_key.bypass_remnawave_uuid,
+                    regular_vpn_remnawave_uuid=last_with_key.regular_vpn_remnawave_uuid,
+                    fgcn_key_id=last_with_key.fgcn_key_id,
+                    fgcn_tg_id=last_with_key.fgcn_tg_id,
+                    is_fgn_key=last_with_key.is_fgn_key,
                 )
                 from .services import PaymentService
                 payment_service = PaymentService()
-                success = payment_service.confirm_payment(new_payment)
+                # ВАЖНО: при автопродлении НЕ отправляем уведомления пользователю
+                success = payment_service.confirm_payment(new_payment, skip_notification=True)
                 if not success:
                     logger.error(f"Не удалось продлить ключ для charge #{new_payment.payment_id}")
                     return False
@@ -795,8 +816,9 @@ class AntilopayService:
 
             logger.info(f"Подписка продлена: новый платеж #{new_payment.payment_id}, истекает {new_expires}")
 
-            if not skip_notification:
-                AntilopayService._send_recurrent_notification(new_payment, subscription_type, vpn_type, new_expires)
+            # ПРИ АВТОПРОДЛЕНИИ НЕ ОТПРАВЛЯЕМ УВЕДОМЛЕНИЯ ПОЛЬЗОВАТЕЛЮ
+            # if not skip_notification:
+            #     AntilopayService._send_recurrent_notification(new_payment, subscription_type, vpn_type, new_expires)
 
             return True
 
