@@ -785,10 +785,12 @@ async def handle_platega_callback(request):
                 from bot_management.platega_service import PlategaService
                 
                 # Вызываем синхронную функцию через sync_to_async
+                # skip_notification=True, так как бот сам отправит уведомление после успешной обработки
                 result = await sync_to_async(PlategaService.process_webhook)(
                     callback_data, 
                     merchant_id=merchant_id, 
-                    secret=secret
+                    secret=secret,
+                    skip_notification=True
                 )
                 
                 if result:

@@ -1598,7 +1598,18 @@ def antilopay_webhook(request):
 
         logger.info(f"Получен callback от Antilopay: {callback_data}")
 
-        result = AntilopayService.process_webhook(callback_data, skip_notification=False)
+        # Определяем, является ли платеж рекуррентным (автосписанием)
+        # Рекуррентный платеж имеет recurrent_id и order_id с суффиксом _R
+        is_recurrent_payment = (
+            'recurrent_id' in callback_data and 
+            callback_data.get('order_id') and 
+            '_R' in callback_data.get('order_id', '')
+        )
+        skip_notification = is_recurrent_payment
+        
+        logger.info(f"is_recurrent_payment={is_recurrent_payment}, skip_notification={skip_notification}")
+
+        result = AntilopayService.process_webhook(callback_data, skip_notification=skip_notification)
 
         if result:
             logger.info("Antilopay callback успешно обработан")
