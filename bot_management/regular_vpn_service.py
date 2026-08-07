@@ -302,23 +302,23 @@ def process_regular_vpn_payment_success_sync(
             expire_dt = datetime.now(dt_timezone.utc) + timedelta(days=duration_days)
             new_expire_at = expire_dt.strftime('%Y-%m-%dT%H:%M:%S.') + f"{expire_dt.microsecond // 1000:03d}Z"
 
-            # Устанавливаем лимит трафика (ровные ТБ через 1024):
-            # - 50ГБ для trial
-            # - 100ГБ для day (1 день)
-            # - 512ГБ (ровно 0.5 ТБ) для month
-            # - 3072ГБ (ровно 3 ТБ) для 3months
-            # - 6144ГБ (ровно 6 ТБ) для 6months
-            # - 12288ГБ (ровно 12 ТБ) для year
-            # - 24576ГБ (ровно 24 ТБ) для 2years
+            # Устанавливаем лимит трафика (120 ГБ для всех тарифов, 10 ГБ для trial):
+            # - 10ГБ для trial
+            # - 120ГБ для day (1 день)
+            # - 120ГБ для month
+            # - 120ГБ для 3months
+            # - 120ГБ для 6months
+            # - 120ГБ для year
+            # - 120ГБ для 2years
             traffic_limit_bytes = None
             traffic_map = {
-                'trial': 50,
-                'day': 100,
-                'month': 512,
-                '3months': 3072,
-                '6months': 6144,
-                'year': 12288,
-                '2years': 24576,
+                'trial': 10,
+                'day': 120,
+                'month': 120,
+                '3months': 120,
+                '6months': 120,
+                'year': 120,
+                '2years': 120,
             }
             traffic_gb = traffic_map.get(subscription_type)
             if traffic_gb is not None:
