@@ -162,17 +162,17 @@ def issue_trial_key(request, user_id):
             r_status = recurrent_status.get('status', '')
             logger.info(f"Статус рекуррента {recurrent_id}: {r_status}")
             
-            # Разрешаем выдачу ключа ТОЛЬКО если рекуррент полностью активен (ACTIVE)
-            # WAIT_CONFIRM — промежуточный статус, нет гарантии активации рекуррента
-            # ACTIVE — рекуррент точно активен и списание произойдет через delay дней (при наличии средств)
-            if r_status != 'ACTIVE':
-                logger.warning(f"Отказ в выдаче пробного ключа: рекуррент {recurrent_id} в статусе {r_status} (требуется ACTIVE)")
+            # Разрешаем выдачу ключа если рекуррент в статусе WAIT_CONFIRM или ACTIVE
+            # WAIT_CONFIRM — карта привязана, пользователь подтвердил, ожидает первое списание через delay дней
+            # ACTIVE — рекуррент полностью активен
+            if r_status not in ('WAIT_CONFIRM', 'ACTIVE'):
+                logger.warning(f"Отказ в выдаче пробного ключа: рекуррент {recurrent_id} в статусе {r_status} (требуется WAIT_CONFIRM или ACTIVE)")
                 return JsonResponse({
                     'success': False,
                     'error': f'Карта еще не привязана. Статус: {r_status}. Пожалуйста, завершите привязку карты.'
                 })
             
-            logger.info(f"✅ Рекуррент {recurrent_id} в статусе ACTIVE — пробный ключ будет выдан (автосписание через сутки гарантировано)")
+            logger.info(f"✅ Рекуррент {recurrent_id} в статусе {r_status} — пробный ключ будет выдан")
 
             # Создаем платеж для пробного ключа со статусом pending
             # Для regular VPN используем subscription_type='regular_trial'
