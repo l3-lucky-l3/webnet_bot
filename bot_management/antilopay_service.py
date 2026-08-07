@@ -709,12 +709,12 @@ class AntilopayService:
                     pass
 
             duration_map = {
-                'trial': 1, 'week': 7, 'month': 30, '3months': 90,
+                'trial': 3, 'week': 7, 'month': 30, '3months': 90,
                 '6months': 180, 'year': 365, '2years': 730,
-                'regular_trial': 1, 'regular_day': 1, 'regular_month': 30,
+                'regular_trial': 3, 'regular_day': 1, 'regular_month': 30,
                 'regular_3months': 90, 'regular_6months': 180, 'regular_year': 365,
                 'regular_2years': 730,
-                'fast_trial': 1, 'fast_week': 7, 'fast_month': 30,
+                'fast_trial': 3, 'fast_week': 7, 'fast_month': 30,
                 'fast_3months': 90, 'fast_6months': 180, 'fast_year': 365,
             }
             base_type = subscription_type.replace('regular_', '').replace('fast_', '')
@@ -891,12 +891,12 @@ class AntilopayService:
                 return False
 
             duration_map = {
-                'trial': 1, 'week': 7, 'month': 30, '3months': 90,
+                'trial': 3, 'week': 7, 'month': 30, '3months': 90,
                 '6months': 180, 'year': 365, '2years': 730,
-                'regular_trial': 1, 'regular_day': 1, 'regular_month': 30,
+                'regular_trial': 3, 'regular_day': 1, 'regular_month': 30,
                 'regular_3months': 90, 'regular_6months': 180, 'regular_year': 365,
                 'regular_2years': 730,
-                'fast_trial': 1, 'fast_week': 7, 'fast_month': 30,
+                'fast_trial': 3, 'fast_week': 7, 'fast_month': 30,
                 'fast_3months': 90, 'fast_6months': 180, 'fast_year': 365,
             }
             base_type = subscription_type.replace('regular_', '').replace('fast_', '')

@@ -155,7 +155,9 @@ def _send_payment_success_notification_sync(payment: Payment, key: str):
 
 # Маппинг типов подписок на длительность в днях
 SUBSCRIPTION_DURATION_MAP = {
-    'trial': 1,  # Пробный период - 1 день
+    'trial': 3,  # Пробный период - 3 дня
+    'regular_trial': 3,  # Пробный период для Regular VPN - 3 дня
+    'fast_trial': 3,  # Пробный период для Fast VPN - 3 дня
     'day': 1,
     'month': 30,
     '3months': 90,
@@ -313,6 +315,8 @@ def process_regular_vpn_payment_success_sync(
             traffic_limit_bytes = None
             traffic_map = {
                 'trial': 10,
+                'regular_trial': 10,
+                'fast_trial': 10,
                 'day': 120,
                 'month': 120,
                 '3months': 120,
