@@ -76,6 +76,8 @@ KEY_DELIVERY_MESSAGE_2 = """📲Установка и настройка
 
 SUBSCRIPTION_DURATION_MAP = {
     'trial': 3,
+    'regular_trial': 3,
+    'fast_trial': 3,
     'week': 7,
     'month': 30,
     '3months': 90,
@@ -85,6 +87,8 @@ SUBSCRIPTION_DURATION_MAP = {
 
 TRAFFIC_LIMIT_MAP = {
     'trial': 10,
+    'regular_trial': 10,
+    'fast_trial': 10,
     'week': 120,
     'month': 120,
     '3months': 120,
