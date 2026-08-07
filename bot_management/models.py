@@ -286,6 +286,8 @@ class Payment(models.Model):
 
     SUBSCRIPTION_TYPES = [
         ('trial', 'Пробная (3 дня)'),
+        ('regular_trial', 'Пробная ULTRA FAST (3 дня)'),
+        ('fast_trial', 'Пробная Обычный VPN (3 дня)'),
         ('month', 'Месячная'),
         ('3months', '3 месяца'),
         ('6months', '6 месяцев'),
