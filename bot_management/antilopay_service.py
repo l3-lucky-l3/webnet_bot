@@ -172,7 +172,7 @@ class AntilopayService:
             }
 
             # Логирование параметров рекуррентного платежа для отладки
-            if is_binding_payment:
+            if is_binding:
                 logger.info(f"🔒 [CREATE_PAYMENT] RECURRENT привязка карты: payment_id={payment_model.payment_id}, delay={delay} дней, delay_type=DAY, category=SUBSCRIPTION")
                 logger.info(f"📋 [CREATE_PAYMENT] Recurrent params: type={body_dict['recurrent']['type']}, payment_count={body_dict['recurrent']['payment_count']}, delay={body_dict['recurrent']['delay']}")
 
@@ -180,7 +180,7 @@ class AntilopayService:
             headers = AntilopayService._headers(body)
 
             logger.info(f"💳 [CREATE_PAYMENT] Creating Antilopay payment: payment_id={payment_model.payment_id}, amount={payment_model.amount}, order_id={unique_order_id}")
-            if is_binding_payment:
+            if is_binding:
                 logger.info(f"🔒 [CREATE_PAYMENT] Платёж для привязки карты (amount=0), рекуррент будет создан с delay={delay} дней")
 
             response = requests.post(
@@ -222,7 +222,7 @@ class AntilopayService:
 
                 logger.info(f"💾 [CREATE_PAYMENT] Saved to DB: payment_id={payment_model.payment_id}, antilopay_payment_id={payment_id_ap}, antilopay_order_id={unique_order_id}, recurrent_id={recurrent_id}")
                 logger.info(f"✅ [CREATE_PAYMENT] Success! Antilopay ID: {payment_id_ap}, Order ID: {unique_order_id}")
-                if is_binding_payment and recurrent_id:
+                if is_binding and recurrent_id:
                     logger.info(f"✅ [CREATE_PAYMENT] RECURRENT создан: recurrent_id={recurrent_id}, order_id={unique_order_id}. Ожидается оплата пользователем для активации.")
 
                 return {
