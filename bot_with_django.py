@@ -1208,6 +1208,34 @@ async def schedule_subscription_expiry_reminders(payment_id: int, user_id: int, 
     except Exception as e:
         logging.error(f"Ошибка планирования напоминаний об истечении подписки для платежа {payment_id}: {e}")
 
+async def switch_user_to_expired_squad(user_id: int):
+    """
+    Переключает пользователя на сквад с ограниченным доступом (ремнаутрон) при истечении подписки.
+    Вырубает все текущие сквады и добавляет только сквад "22a6415e-db7b-486c-8c8a-ccecf42d8459"
+    """
+    try:
+        from bot_management.remnawave_api import get_remnawave_bypass_client
+        from config import REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID
+        
+        remnawave_client = get_remnawave_bypass_client()
+        if not remnawave_client:
+            logging.error(f'Remnawave Bypass клиент не инициализирован для пользователя {user_id}')
+            return
+        
+        expired_squad_uuid = REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID
+        if not expired_squad_uuid:
+            logging.error(f'REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID не настроен')
+            return
+        
+        # Обновляем сквады пользователя - устанавливаем только сквад с ограниченным доступом
+        await remnawave_client.update_user_squads(user_id, [expired_squad_uuid])
+        
+        logging.info(f'Пользователь {user_id} переключен на сквад истекшей подписки {expired_squad_uuid}')
+        
+    except Exception as e:
+        logging.error(f'Ошибка переключения пользователя {user_id} на сквад истекшей подписки: {e}')
+        raise
+
 async def send_subscription_reminder_later(user_id: int, subscription_type: str, delay_seconds: float, reminder_type: str):
     """Отправляет напоминание о подписке через указанное время"""
     try:
@@ -1234,6 +1262,7 @@ async def send_subscription_reminder_later(user_id: int, subscription_type: str,
 🔄 <b>Продлите подписку сейчас</b> и продолжайте пользоваться без перерывов!
 """
         elif reminder_type == 'expired':
+            # Когда подписка истекла - отправляем уведомление и переключаем пользователя на сквад с ограниченным доступом
             message = f"""
 ❌ <b>Подписка истекла</b>
 
@@ -1243,6 +1272,11 @@ async def send_subscription_reminder_later(user_id: int, subscription_type: str,
 
 🔄 <b>Продлите подписку</b>, чтобы восстановить доступ и продолжить пользоваться сервисом без ограничений!
 """
+            # Отправляем запрос на обновление сквада (переключение на ремнаутрон)
+            try:
+                await switch_user_to_expired_squad(user_id)
+            except Exception as squad_error:
+                logging.error(f'Ошибка переключения пользователя {user_id} на сквад истекшей подписки: {squad_error}')
         else:
             return
 
