@@ -849,6 +849,14 @@ class AntilopayService:
             vpn_type = getattr(payment_model, 'vpn_type', 'night')
             subscription_type = payment_model.subscription_type
 
+            # Проверяем, является ли это пробной подпиской
+            is_trial = subscription_type in ('trial', 'regular_trial', 'fast_trial')
+            
+            if is_trial:
+                logger.info(f"Платеж {payment_model.payment_id} - пробная подписка ({subscription_type}), выдаём ключ на 3 дня с 10 ГБ")
+                # Для пробных подписок используем специальную логику выдачи ключа на 3 дня
+                return AntilopayService._handle_trial_payment_success(payment_model, skip_notification=skip_notification)
+
             is_regular_vpn = (vpn_type == 'regular') or subscription_type.startswith('regular_')
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
 
@@ -867,6 +875,62 @@ class AntilopayService:
 
         except Exception as e:
             logger.error(f"Ошибка обработки успешного Antilopay платежа: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
+
+    @staticmethod
+    def _handle_trial_payment_success(payment_model: PaymentModel, skip_notification: bool = False) -> bool:
+        """
+        Обрабатывает успешный платеж для пробной подписки - выдаёт ключ на 3 дня с 10 ГБ трафика.
+        
+        Args:
+            payment_model: Модель платежа
+            skip_notification: Пропустить отправку уведомления
+            
+        Returns:
+            True если обработка успешна
+        """
+        try:
+            from .services import PaymentService
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            logger.info(f"Выдача пробного ключа на 3 дня для платежа {payment_model.payment_id}")
+            
+            vpn_type = getattr(payment_model, 'vpn_type', 'night')
+            subscription_type = payment_model.subscription_type
+            
+            # Определяем правильный тип подписки для пробного периода
+            if vpn_type == 'regular':
+                payment_model.subscription_type = 'regular_trial'
+            elif vpn_type == 'fast':
+                payment_model.subscription_type = 'fast_trial'
+            else:
+                payment_model.subscription_type = 'trial'
+            
+            payment_model.save(update_fields=['subscription_type'])
+            
+            # Выдаём ключ через PaymentService (который использует правильную длительность из TRIAL_DURATION)
+            payment_service = PaymentService()
+            success = payment_service.confirm_payment(payment_model)
+            
+            if success:
+                payment_model.refresh_from_db()
+                logger.info(f"✅ Пробный ключ успешно выдан: {payment_model.issued_key}, expires: {payment_model.subscription_expires_at}")
+                
+                # Помечаем, что пользователь использовал пробный ключ
+                user = payment_model.user
+                trial_used_field = f'trial_key_used_{vpn_type}'
+                if not getattr(user, trial_used_field, False):
+                    setattr(user, trial_used_field, True)
+                    user.save(update_fields=[trial_used_field])
+                    logger.info(f"Установлен флаг {trial_used_field}=True для пользователя {user.user_id}")
+            
+            return success
+            
+        except Exception as e:
+            logger.error(f"Ошибка обработки пробного платежа: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return False
