@@ -107,6 +107,9 @@ REMNAWAVE_BYPASS_DEFAULT_SQUAD_UUID = [u.strip() for u in os.getenv("REMNAWAVE_B
 # Remnawave Обычный VPN (использует тот же bypass API, но 1 squad)
 REMNAWAVE_FAST_VPN_SQUAD_UUID = os.getenv("REMNAWAVE_FAST_VPN_SQUAD_UUID", "cf8da8a2-44cd-4a12-b568-7ccf6733eae2").strip() if os.getenv("REMNAWAVE_FAST_VPN_SQUAD_UUID", "cf8da8a2-44cd-4a12-b568-7ccf6733eae2") else None
 
+# Remnawave сквад для пользователей с истекшей подпиской (режим ограниченного доступа)
+REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID = os.getenv("REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID", "22a6415e-db7b-486c-8c8a-ccecf42d8459").strip() if os.getenv("REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID", "22a6415e-db7b-486c-8c8a-ccecf42d8459") else None
+
 # FGN Connection API (устарело, не используется)
 FGN_CONNECTION_BASE_URL = os.getenv("FGN_CONNECTION_BASE_URL", "https://aprs.fgnconnection.xyz").rstrip('/')
 FGN_CONNECTION_TOKEN = os.getenv("FGN_CONNECTION_TOKEN", "")

@@ -315,6 +315,31 @@ class RemnawaveAPI:
         except RemnawaveAPIError:
             return None
     
+    async def update_user_squads(self, telegram_id: int, squad_uuids: list) -> Dict:
+        """
+        Обновить сквады пользователя (добавить/заменить activeInternalSquads)
+        
+        Args:
+            telegram_id: Telegram ID пользователя
+            squad_uuids: Список UUID сквадов для установки
+            
+        Returns:
+            Dict с данными обновленного пользователя
+        """
+        user = await self.get_user(telegram_id)
+        if not user:
+            raise RemnawaveAPIError("User not found")
+        
+        user_uuid = user.get('uuid')
+        
+        update_data = {
+            'uuid': user_uuid,
+            'activeInternalSquads': squad_uuids
+        }
+        
+        result = await self._request('PATCH', '/api/users', update_data)
+        return result.get('response', {})
+
     async def extend_subscription(self, telegram_id: int, duration_days: int) -> Dict:
         """
         Продлить подписку пользователя
