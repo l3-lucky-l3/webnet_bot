@@ -1742,6 +1742,34 @@ def check_antilopay_payment_status(request, payment_id):
             trial_used_field = f'trial_key_used_{vpn_type}'
             if not getattr(user, trial_used_field, False):
                 is_trial_binding = True
+        
+        # Если это привязка карты для пробного периода — выдаём пробный ключ автоматически
+        if is_trial_binding and payment.antilopay_recurrent_id:
+            logger.info(f"🎁 Привязка карты для пробного периода detected. Выдаём пробный ключ для user {payment.user.user_id}, vpn_type={vpn_type}")
+            try:
+                from .user_api_trial import issue_trial_key
+                from django.http import HttpRequest
+                
+                # Создаём фиктивный request для вызова API
+                fake_request = HttpRequest()
+                fake_request.method = 'POST'
+                fake_request.content_type = 'application/json'
+                fake_request.body = json.dumps({
+                    'vpn_type': vpn_type,
+                    'antilopay_recurrent_id': payment.antilopay_recurrent_id
+                })
+                
+                response = issue_trial_key(fake_request, payment.user.user_id)
+                response_data = json.loads(response.content)
+                
+                if response_data.get('success'):
+                    logger.info(f"✅ Пробный ключ успешно выдан: {response_data.get('issued_key')}")
+                else:
+                    logger.error(f"❌ Ошибка выдачи пробного ключа: {response_data.get('error')}")
+            except Exception as e:
+                logger.error(f"Ошибка при автоматической выдаче пробного ключа: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
 
         if ap_status_normalized == 'SUCCESS' and payment.status != 'succeeded' and not is_binding:
             logger.info(f"Платеж {payment.payment_id} успешен в Antilopay, подтверждаем")

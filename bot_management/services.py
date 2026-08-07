@@ -871,7 +871,14 @@ class PaymentService:
             return None
 
         if subscription_type == 'trial':
-            return paid_at + timedelta(days=1)
+            # Пробный период: 3 дня с моментом выдачи ключа
+            return paid_at + timedelta(days=3)
+        elif subscription_type == 'regular_trial':
+            # Пробный период для Regular VPN: 3 дня
+            return paid_at + timedelta(days=3)
+        elif subscription_type == 'fast_trial':
+            # Пробный период для Fast VPN: 3 дня
+            return paid_at + timedelta(days=3)
         elif subscription_type == 'week':
             return paid_at + timedelta(days=7)
         elif subscription_type == 'month':
