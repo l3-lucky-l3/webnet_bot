@@ -4339,64 +4339,8 @@ async def pay_with_card(callback: CallbackQuery):
         logging.error(f"Ошибка получения цены: {e}")
         amount = PRICES.get(subscription_type, 0)
 
-    # Создаем платеж через Platega API
-    if DJANGO_INTEGRATION:
-        # return_url будет установлен автоматически в views.py с payment_id
-        payment_data = await create_yookassa_payment(  # Функция теперь использует Platega
-            user_id=user_id,
-            subscription_type=subscription_type,
-            amount=amount,
-            return_url=None  # Будет установлен автоматически в views.py
-        )
-
-        if payment_data:
-            # Создаем кнопку для оплаты
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="💳 Оплатить", url=payment_data['confirmation_url'])],
-                [InlineKeyboardButton(text="🔄 Проверить статус", callback_data=f"check_payment_{payment_data['payment_id']}")],
-                [InlineKeyboardButton(text="⬅️ Назад", callback_data="catalog_night_vpn")] 
-            ])
-
-            # Определяем название подписки
-            sub_names = {
-                'week': '1 неделя',
-                'month': '1 месяц',
-                '3months': '3 месяца',
-                '6months': '6 месяцев',
-                'year': '12 месяцев (год)'
-            }
-            sub_name = sub_names.get(subscription_type, 'Подписка')
-
-            await callback.message.answer(f"""
-💳 <b>Оплата подписки картой</b>
-
-💰 <b>Сумма:</b> {amount} ₽
-📅 <b>Тип:</b> {sub_name}
-🆔 <b>ID платежа:</b> {payment_data['payment_id']}
-
-🔗 <b>Нажмите кнопку "Оплатить" для перехода к оплате</b>
-
-<i>После оплаты нажмите кнопку "Проверить статус" чтобы получить ключ</i>
-
-Если платеж не проходит напишите в тех поддержку @yamalube61
-""", parse_mode="HTML", reply_markup=keyboard)
-        else:
-            await callback.message.answer("""
-❌ <b>Ошибка создания платежа</b>
-
-🔧 <b>Что происходит:</b>
-• Временная недоступность платежной системы
-• Попробуйте позже
-
-⏰ <b>Попробуйте через несколько минут</b>
-
-<i>Мы работаем над решением проблемы! 🚀</i>
-""", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data=callback.data)],
-    [InlineKeyboardButton(text="⬅️ Каталог", callback_data="catalog")]
-]))
-
-    await callback.answer()
+    # Показываем подтверждение с возможностью ввода промокода
+    await _show_pending_payment_message(callback, user_id, subscription_type, 'night', amount, "catalog_night_vpn", payment_method="CARD")
 
 
 async def _show_pending_payment_message(callback: CallbackQuery, user_id: int, subscription_type: str, vpn_type: str, amount: int, back_catalog: str, payment_method: str = "SBP"):
@@ -4781,90 +4725,11 @@ async def pay_with_crypto(callback: CallbackQuery):
             logging.error(f"Ошибка получения цены: {e}")
             amount = PRICES.get(subscription_type, 0)
 
-    # Определяем название подписки
-    sub_names = {
-        'week': '1 неделя',
-        'month': '1 месяц',
-        '3months': '3 месяца',
-        '6months': '6 месяцев',
-        'year': '1 год',
-        '2years': '2 года'
-    }
-    sub_name = sub_names.get(subscription_type, 'Подписка')
-    vpn_label = "⚡ ULTRA FAST VPN" if vpn_type == 'regular' else ("🚀 Обычный VPN" if vpn_type == 'fast' else "🛡️ ОБХОД глушилок + VPN")
+    # Определяем back_catalog
+    back_catalog = "catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn")
 
-    # Создаем платеж
-    if DJANGO_INTEGRATION:
-        if vpn_type == 'regular':
-            payment_data = await create_platega_payment(
-                user_id=user_id,
-                subscription_type=f'regular_{subscription_type}',
-                amount=amount,
-                return_url=None,
-                payment_method=13,
-                vpn_type='regular'
-            )
-            back_catalog = "catalog_regular_vpn"
-        elif vpn_type == 'fast':
-            payment_data = await create_platega_payment(
-                user_id=user_id,
-                subscription_type=f'fast_{subscription_type}',
-                amount=amount,
-                return_url=None,
-                payment_method=13,
-                vpn_type='fast'
-            )
-            back_catalog = "catalog_fast_vpn"
-        else:
-            payment_data = await create_platega_payment(
-                user_id=user_id,
-                subscription_type=subscription_type,
-                amount=amount,
-                return_url=None,
-                payment_method=13
-            )
-            back_catalog = "catalog_night_vpn"
-
-        if payment_data:
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="₿ Оплатить криптой", url=payment_data['confirmation_url'])],
-                [InlineKeyboardButton(text="🔄 Проверить статус", callback_data=f"check_payment_{payment_data['payment_id']}")],
-                [InlineKeyboardButton(text="⬅️ Назад", callback_data=back_catalog)]
-            ])
-
-            await callback.message.answer(f"""
-₿ <b>Оплата подписки криптовалютой</b>
-
-{vpn_label}
-💰 <b>Сумма:</b> {amount} ₽
-📅 <b>Тип:</b> {sub_name}
-🆔 <b>ID платежа:</b> {payment_data['payment_id']}
-
-🔗 <b>Нажмите кнопку "Оплатить криптой" для перехода к оплате</b>
-
-<i>После оплаты ключ будет выдан автоматически</i>
-
-Если платеж не проходит напишите в тех поддержку @yamalube61
-""", parse_mode="HTML", reply_markup=keyboard)
-        else:
-            await callback.message.answer("""
-❌ <b>Ошибка создания платежа</b>
-
-🔧 <b>Что происходит:</b>
-• Временная недоступность платежной системы
-• Попробуйте позже
-
-⏰ <b>Попробуйте через несколько минут</b>
-
-<i>Мы работаем над решением проблемы! 🚀</i>
-""", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data=callback.data)],
-    [InlineKeyboardButton(text="⬅️ Каталог", callback_data=back_catalog)]
-]))
-    else:
-        await callback.answer("❌ Сервис оплаты недоступен", show_alert=True)
-
-    await callback.answer()
+    # Показываем подтверждение с возможностью ввода промокода
+    await _show_pending_payment_message(callback, user_id, subscription_type, vpn_type, amount, back_catalog, payment_method="CRYPTO")
 
 
 @router.callback_query(F.data.startswith("pay_cryptobot_"))
@@ -4917,80 +4782,11 @@ async def pay_with_cryptobot(callback: CallbackQuery):
             logging.error(f"Ошибка получения цены: {e}")
             amount = PRICES.get(subscription_type, 0)
 
-    # Определяем название подписки
-    sub_names = {
-        'week': '1 неделя',
-        'month': '1 месяц',
-        '3months': '3 месяца',
-        '6months': '6 месяцев',
-        'year': '1 год',
-        '2years': '2 года'
-    }
-    sub_name = sub_names.get(subscription_type, 'Подписка')
-    vpn_label = "⚡ ULTRA FAST VPN" if vpn_type == 'regular' else ("🚀 Обычный VPN" if vpn_type == 'fast' else "🛡️ ОБХОД глушилок + VPN")
+    # Определяем back_catalog
+    back_catalog = "catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn")
 
-    # Создаем платеж через CryptoBot
-    if DJANGO_INTEGRATION:
-        # Определяем тип подписки для CryptoBot
-        if vpn_type == 'regular':
-            crypto_subscription_type = f'regular_{subscription_type}'
-        elif vpn_type == 'fast':
-            crypto_subscription_type = f'fast_{subscription_type}'
-        else:
-            crypto_subscription_type = subscription_type
-
-        payment_data = await create_cryptobot_payment(
-            user_id=user_id,
-            subscription_type=crypto_subscription_type,
-            amount=amount,
-            asset='USDT',  # По умолчанию USDT
-            vpn_type=vpn_type
-        )
-
-        if payment_data:
-            # Определяем callback для возврата
-            back_callback = "catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn")
-
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="💎 Оплатить через CryptoBot", url=payment_data['confirmation_url'])],
-                [InlineKeyboardButton(text="🔄 Проверить статус", callback_data=f"check_payment_{payment_data['payment_id']}")],
-                [InlineKeyboardButton(text="⬅️ Назад", callback_data=back_callback)]
-            ])
-
-            await callback.message.answer(f"""
-💎 <b>Оплата через CryptoBot</b>
-
-{vpn_label}
-💰 <b>Сумма:</b> {amount} ₽ (~{payment_data['amount']} {payment_data['asset']})
-📅 <b>Тип:</b> {sub_name}
-🆔 <b>ID платежа:</b> {payment_data['payment_id']}
-
-🔗 <b>Нажмите кнопку "Оплатить через CryptoBot" для перехода к оплате</b>
-
-<i>Принимаем: TON, USDT (TRC-20), BTC, ETH и другие криптовалюты</i>
-<i>После оплаты нажмите кнопку "Проверить статус"</i>
-
-Если платеж не проходит напишите в тех поддержку @yamalube61
-""", parse_mode="HTML", reply_markup=keyboard)
-        else:
-            await callback.message.answer("""
-❌ <b>Ошибка создания платежа</b>
-
-🔧 <b>Что происходит:</b>
-• Временная недоступность платежной системы
-• Попробуйте позже
-
-⏰ <b>Попробуйте через несколько минут</b>
-
-<i>Мы работаем над решением проблемы! 🚀</i>
-""", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="🔄 Попробовать снова", callback_data=callback.data)],
-    [InlineKeyboardButton(text="⬅️ Каталог", callback_data="catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn"))]
-]))
-    else:
-        await callback.answer("❌ Сервис оплаты недоступен", show_alert=True)
-
-    await callback.answer()
+    # Показываем подтверждение с возможностью ввода промокода
+    await _show_pending_payment_message(callback, user_id, subscription_type, vpn_type, amount, back_catalog, payment_method="CRYPTOBOT")
 
 
 @router.callback_query(F.data.startswith("pay_referral_"))
@@ -5041,107 +4837,11 @@ async def pay_with_referral_balance(callback: CallbackQuery):
             logging.error(f"Ошибка получения цены: {e}")
             amount = PRICES.get(subscription_type, 0)
 
-    # Проверяем реферальный баланс пользователя
-    if DJANGO_INTEGRATION:
-        try:
-            import aiohttp
-            api_url = f'{DJANGO_API_URL}/bot_management/api/referral/balance/{user_id}/'
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.get(api_url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        if data.get('success'):
-                            referral_balance = data.get('referral_balance', 0)
-                        else:
-                            await callback.answer("❌ Ошибка получения баланса", show_alert=True)
-                            return
-                    else:
-                        await callback.answer("❌ Ошибка сервера", show_alert=True)
-                        return
-        except Exception as e:
-            logging.error(f"Ошибка получения реферального баланса: {e}")
-            await callback.answer("❌ Ошибка получения баланса", show_alert=True)
-            return
-        
-        # Проверяем достаточно ли средств
-        if referral_balance < amount:
-            await callback.answer(
-                f"❌ Недостаточно средств на реферальном балансе\n"
-                f"💰 Ваш баланс: {referral_balance} ₽\n"
-                f"💰 Требуется: {amount} ₽\n"
-                f"💰 Не хватает: {amount - referral_balance} ₽",
-                show_alert=True
-            )
-            return
-        
-        # Создаем платеж через реферальный баланс
-        try:
-            import aiohttp
-            api_url = f'{DJANGO_API_URL}/bot_management/api/referral/payment/'
-            
-            logging.info(f"DEBUG: Отправляем запрос на оплату реферальными средствами: user_id={user_id}, amount={amount}, subscription_type={subscription_type}, vpn_type={vpn_type}")
-            
-            api_subscription_type = f'fast_{subscription_type}' if vpn_type == 'fast' else subscription_type
-            
-            async with aiohttp.ClientSession() as session:
-                async with session.post(api_url, json={
-                    'user_id': user_id,
-                    'amount': amount,
-                    'subscription_type': api_subscription_type,
-                    'vpn_type': vpn_type
-                }) as response:
-                    logging.info(f"DEBUG: Ответ от сервера: status={response.status}")
-                    response_text = await response.text()
-                    logging.info(f"DEBUG: Текст ответа: {response_text}")
-                    
-                    if response.status == 200:
-                        data = await response.json()
-                        logging.info(f"DEBUG: JSON ответ: {data}")
-                        if data.get('success'):
-                            # Платеж успешно создан
-                            payment_id = data.get('payment_id')
-                            issued_key = data.get('issued_key')
-                            
-                            sub_names = {
-                                'week': '1 неделя',
-                                'month': '1 месяц',
-                                '3months': '3 месяца',
-                                '6months': '6 месяцев',
-                                'year': '1 год',
-                                '2years': '2 года'
-                            }
-                            sub_name = sub_names.get(subscription_type, 'Подписка')
-                            vpn_label = "⚡ ULTRA FAST VPN" if vpn_type == 'regular' else ("🚀 Обычный VPN" if vpn_type == 'fast' else "🛡️ ОБХОД глушилок + VPN")
-                            
-                            await callback.message.answer(f"""
-✅ <b>Оплата реферальными средствами успешна!</b>
+    # Определяем back_catalog
+    back_catalog = "catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn")
 
-{vpn_label}
-💰 <b>Сумма:</b> {amount} ₽
-📅 <b>Тип:</b> {sub_name}
-🆔 <b>Платеж:</b> #{payment_id}
-
-🔑 <b>Ваш ключ:</b>
-{issued_key}
-
-<i>Ключ активирован автоматически! 🚀</i>
-""", parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                                [InlineKeyboardButton(text="🔑 Мои ключи", callback_data="my_keys")],
-                                [InlineKeyboardButton(text="⬅️ Главное меню", callback_data="main_menu")]
-                            ]))
-                        else:
-                            error_msg = data.get('message', 'Неизвестная ошибка')
-                            await callback.answer(f"❌ Ошибка: {error_msg}", show_alert=True)
-                    else:
-                        await callback.answer(f"❌ Ошибка сервера при создании платежа (HTTP {response.status})", show_alert=True)
-        except Exception as e:
-            logging.error(f"Ошибка создания платежа реферальными средствами: {e}")
-            import traceback
-            logging.error(f"Traceback: {traceback.format_exc()}")
-            await callback.answer(f"❌ Ошибка создания платежа: {str(e)}", show_alert=True)
-    else:
-        await callback.answer("❌ Система недоступна", show_alert=True)
+    # Показываем подтверждение с возможностью ввода промокода
+    await _show_pending_payment_message(callback, user_id, subscription_type, vpn_type, amount, back_catalog, payment_method="REFERRAL")
 
 
 @router.callback_query(F.data.startswith("pay_bank_card_"))
