@@ -563,8 +563,13 @@ class Command(BaseCommand):
             raise
 
     def send_just_expired_reminder(self, payment):
-        """Отправляет уведомление о только что закончившейся подписке"""
+        """Отправляет уведомление о только что закончившейся подписке и переключает пользователя на сквад истёкшей подписки"""
         user = payment.user
+
+        # Проверяем, не был ли пользователь уже переключен на сквад истёкшей подписки
+        if payment.switched_to_expired_squad:
+            logger.info(f'Пользователь {user.user_id} уже переключен на сквад истёкшей подписки, пропускаем')
+            return
 
         # Определяем текст уведомления с длительностью
         sub_names = {
@@ -602,6 +607,46 @@ class Command(BaseCommand):
         }
 
         self._send_telegram_message(user.user_id, message, keyboard)
+
+        # Переключаем пользователя на сквад истёкшей подписки
+        self.switch_user_to_expired_squad(user.user_id, payment)
+
+    def switch_user_to_expired_squad(self, user_id: int, payment):
+        """
+        Переключает пользователя на сквад с ограниченным доступом (ремнаутрон) при истечении подписки.
+        Вырубает все текущие сквады и добавляет только сквад "22a6415e-db7b-486c-8c8a-ccecf42d8459"
+        """
+        try:
+            from bot_management.remnawave_api import get_remnawave_bypass_client
+            from config import REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID
+            
+            remnawave_client = get_remnawave_bypass_client()
+            if not remnawave_client:
+                logger.error(f'Remnawave Bypass клиент не инициализирован для пользователя {user_id}')
+                return
+            
+            expired_squad_uuid = REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID
+            if not expired_squad_uuid:
+                logger.error(f'REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID не настроен')
+                return
+            
+            # Обновляем сквады пользователя - устанавливаем только сквад с ограниченным доступом
+            import asyncio
+            loop = asyncio.new_event_loop()
+            try:
+                loop.run_until_complete(remnawave_client.update_user_squads(user_id, [expired_squad_uuid]))
+            finally:
+                loop.close()
+            
+            # Помечаем, что пользователь переключен на сквад истёкшей подписки
+            payment.switched_to_expired_squad = True
+            payment.save(update_fields=['switched_to_expired_squad'])
+            
+            logger.info(f'Пользователь {user_id} переключен на сквад истекшей подписки {expired_squad_uuid}')
+            
+        except Exception as e:
+            logger.error(f'Ошибка переключения пользователя {user_id} на сквад истекшей подписки: {e}')
+            raise
 
     def send_trial_expired_reminder(self, payment):
         """Отправляет уведомление об окончании пробного периода"""

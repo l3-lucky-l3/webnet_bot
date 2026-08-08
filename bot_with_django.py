@@ -1275,10 +1275,27 @@ async def send_subscription_reminder_later(user_id: int, subscription_type: str,
 🔄 <b>Продлите подписку</b>, чтобы восстановить доступ и продолжить пользоваться сервисом без ограничений!
 """
             # Отправляем запрос на обновление сквада (переключение на ремнаутрон)
+            # Сначала проверяем, не был ли пользователь уже переключен
+            from bot_management.models import Payment
             try:
-                await switch_user_to_expired_squad(user_id)
-            except Exception as squad_error:
-                logging.error(f'Ошибка переключения пользователя {user_id} на сквад истекшей подписки: {squad_error}')
+                latest_payment = Payment.objects.filter(
+                    user__user_id=user_id,
+                    status='succeeded',
+                    subscription_type=subscription_type
+                ).order_by('-subscription_expires_at').first()
+                
+                if latest_payment and not latest_payment.switched_to_expired_squad:
+                    try:
+                        await switch_user_to_expired_squad(user_id)
+                        # Помечаем, что пользователь переключен
+                        latest_payment.switched_to_expired_squad = True
+                        latest_payment.save(update_fields=['switched_to_expired_squad'])
+                    except Exception as squad_error:
+                        logging.error(f'Ошибка переключения пользователя {user_id} на сквад истекшей подписки: {squad_error}')
+                elif latest_payment:
+                    logging.info(f'Пользователь {user_id} уже переключен на сквад истёкшей подписки, пропускаем')
+            except Exception as e:
+                logging.error(f'Ошибка проверки статуса переключения пользователя {user_id}: {e}')
         else:
             return
 

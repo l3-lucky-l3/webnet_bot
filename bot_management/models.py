@@ -346,6 +346,7 @@ class Payment(models.Model):
     subscription_just_expired_notified = models.BooleanField(default=False, db_index=True, help_text='Было ли отправлено уведомление о только что закончившейся подписке')
     trial_reminder_sent = models.BooleanField(default=False, db_index=True, help_text='Было ли отправлено уведомление об окончании пробного периода')
     trial_key_expired_admin_notified = models.BooleanField(default=False, db_index=True, help_text='Было ли отправлено уведомление админу о закончившемся trial ключе (через сутки)')
+    switched_to_expired_squad = models.BooleanField(default=False, db_index=True, help_text='Переключен ли пользователь на сквад истёкшей подписки (22a6415e-db7b-486c-8c8a-ccecf42d8459)')
 
     # FGN Connection API поля (устарело, оставлено для совместимости)
     fgcn_key_id = models.CharField(max_length=255, null=True, blank=True, db_index=True, verbose_name='ID ключа в API', help_text='Идентификатор ключа, возвращаемый API')
