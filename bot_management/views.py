@@ -448,19 +448,19 @@ def create_cryptobot_payment(request):
             '6months': '6 месяцев',
             'year': 'Годовая подписка',
             'trial': 'Пробная подписка',
-            'regular_day': '1 день (ULTRA FAST VPN)',
-            'regular_month': '1 месяц (ULTRA FAST VPN)',
-            'regular_3months': '3 месяца (ULTRA FAST VPN)',
-            'regular_6months': '6 месяцев (ULTRA FAST VPN)',
-            'regular_year': '1 год (ULTRA FAST VPN)',
-            'regular_2years': '2 года (ULTRA FAST VPN)',
+            'regular_day': '1 день (Обычный VPN)',
+            'regular_month': '1 месяц (Обычный VPN)',
+            'regular_3months': '3 месяца (Обычный VPN)',
+            'regular_6months': '6 месяцев (Обычный VPN)',
+            'regular_year': '1 год (Обычный VPN)',
+            'regular_2years': '2 года (Обычный VPN)',
             'fast_week': '1 неделя (Обычный VPN)',
             'fast_month': '1 месяц (Обычный VPN)',
             'fast_3months': '3 месяца (Обычный VPN)',
             'fast_6months': '6 месяцев (Обычный VPN)',
             'fast_year': '1 год (Обычный VPN)',
         }
-        vpn_label = "ULTRA FAST VPN" if vpn_type == 'regular' else ("Обычный VPN" if vpn_type == 'fast' else "Night VPN")
+        vpn_label = "Обычный VPN" if vpn_type == 'regular' else ("Обычный VPN" if vpn_type == 'fast' else "Night VPN")
         sub_name = subscription_names.get(subscription_type, subscription_type)
         description = f"{vpn_label}: {sub_name}"
 
@@ -681,7 +681,7 @@ def check_platega_payment_status(request, payment_id):
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
             
             if is_regular_vpn:
-                logger.info(f"DEBUG: Платеж {payment.payment_id} - ULTRA FAST VPN, обрабатываем через Remnawave API")
+                logger.info(f"DEBUG: Платеж {payment.payment_id} - Обычный VPN, обрабатываем через Remnawave API")
                 from .platega_service import PlategaService
                 webhook_data = {
                     'id': payment.platega_transaction_id,
@@ -775,7 +775,7 @@ def check_platega_payment_by_transaction_id(request, transaction_id):
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
             
             if is_regular_vpn:
-                logger.info(f"DEBUG: Платеж {payment.payment_id} - ULTRA FAST VPN, обрабатываем через Remnawave API")
+                logger.info(f"DEBUG: Платеж {payment.payment_id} - Обычный VPN, обрабатываем через Remnawave API")
                 from .platega_service import PlategaService
                 webhook_data = {
                     'id': transaction_id,
@@ -916,7 +916,7 @@ def check_cryptobot_payment_status(request, payment_id):
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
 
             if is_regular_vpn:
-                logger.info(f"Платеж {payment.payment_id} - ULTRA FAST VPN, обрабатываем через Remnawave API")
+                logger.info(f"Платеж {payment.payment_id} - Обычный VPN, обрабатываем через Remnawave API")
                 from .cryptobot_service import CryptobotService
                 CryptobotService._handle_regular_vpn_payment_success(payment, skip_notification=True)
             elif is_fast_vpn:

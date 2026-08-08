@@ -49,12 +49,12 @@ class PlategaService:
                 '3months': '3 месяца',
                 '6months': '6 месяцев',
                 'year': 'Годовая подписка',
-                'regular_day': '1 день (ULTRA FAST VPN)',
-                'regular_month': '1 месяц (ULTRA FAST VPN)',
-                'regular_3months': '3 месяца (ULTRA FAST VPN)',
-                'regular_6months': '6 месяцев (ULTRA FAST VPN)',
-                'regular_year': '1 год (ULTRA FAST VPN)',
-                'regular_2years': '2 года (ULTRA FAST VPN)',
+                'regular_day': '1 день (Обычный VPN)',
+                'regular_month': '1 месяц (Обычный VPN)',
+                'regular_3months': '3 месяца (Обычный VPN)',
+                'regular_6months': '6 месяцев (Обычный VPN)',
+                'regular_year': '1 год (Обычный VPN)',
+                'regular_2years': '2 года (Обычный VPN)',
                 'fast_week': '1 неделя (Обычный VPN)',
                 'fast_month': '1 месяц (Обычный VPN)',
                 'fast_3months': '3 месяца (Обычный VPN)',
@@ -320,7 +320,7 @@ class PlategaService:
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
 
             if is_regular_vpn:
-                logger.info(f"DEBUG: Платеж {payment_model.payment_id} - ULTRA FAST VPN (regular_*), генерируем ключ через Remnawave")
+                logger.info(f"DEBUG: Платеж {payment_model.payment_id} - Обычный VPN (regular_*), генерируем ключ через Remnawave")
                 return PlategaService._handle_regular_vpn_payment_success(payment_model, skip_notification=skip_notification)
             elif is_fast_vpn:
                 logger.info(f"DEBUG: Платеж {payment_model.payment_id} - Обычный VPN, генерируем ключ через bypass API")

@@ -12,7 +12,7 @@ from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from config import BOT_TOKEN, ADMIN_IDS, PRICES, VIDEO_FILE_ID, VIDEO_URL, VIDEO_POST_URL, OPERATORS, SUPPORT_GROUP_ID, REQUIRED_CHANNEL, REQUIRED_CHANNEL_ID, DISABLE_PHOTOS, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES, DJANGO_API_URL
+from config import BOT_TOKEN, ADMIN_IDS, PRICES, VIDEO_FILE_ID, VIDEO_URL, VIDEO_POST_URL, OPERATORS, SUPPORT_GROUP_ID, REQUIRED_CHANNEL, REQUIRED_CHANNEL_ID, DISABLE_PHOTOS, REGULAR_VPN_PRICES, FAST_VPN_PRICES, DJANGO_API_URL
 from database import init_db, get_db
 from bot_management.bot_security import rate_limit_check, validate_message_content, bot_security, telegram_throttler
 from bot_management.bot_middlewares import (
@@ -2110,7 +2110,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
             # Пользователь вернулся после оплаты (Platega)
             payment_id = command.args.replace("payment_success_", "")
             
-            # Проверяем, это ⚡ ULTRA FAST VPN или нет
+            # Проверяем, это Обычный VPN или нет
             if DJANGO_INTEGRATION:
                 payment_data = {}
                 try:
@@ -2127,7 +2127,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
                                 issued_key = payment_data.get('issued_key')
                                 expires_at = payment_data.get('subscription_expires_at')
                                 
-                                # Если это ⚡ ULTRA FAST VPN и ключ уже выдан
+                                # Если это Обычный VPN и ключ уже выдан
                                 if vpn_type == 'regular' and issued_key:
                                     # Отправляем сообщения как для пробного ключа
                                     expires_str = expires_at[:16].replace('T', ' ') if expires_at else 'неизвестно'
@@ -2144,7 +2144,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
 <b>🔑 Как подключить устройство?</b>
 
 📲 <b>Установка и настройка:</b>
-1. Скачайте приложение <b>"Happ"</b> (для ⚡ ULTRA FAST VPN)
+1. Скачайте приложение <b>"Happ"</b> (для Обычный VPN)
 2. Скопируйте ключ выше (нажмите на ключ → Копировать)
 3. В правом верхнем углу нажмите <b>"+"</b> (плюсик)
 4. Выберите опцию <b>"Вставить из буфера обмена"</b>
@@ -2232,7 +2232,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
 
                                 if issued_key:
                                     # Показываем ключ сразу (не через _send_key_message — он для CallbackQuery)
-                                    vpn_label = {"night": "ОБХОД глушилок + VPN", "regular": "ULTRA FAST VPN", "fast": "Обычный VPN"}.get(data.get('vpn_type', 'night'), "VPN")
+                                    vpn_label = {"night": "ОБХОД глушилок + VPN", "regular": "Обычный VPN", "fast": "Обычный VPN"}.get(data.get('vpn_type', 'night'), "VPN")
                                     key_text = f"""
 🎉 <b>Оплата подтверждена!</b>
 
@@ -2265,7 +2265,7 @@ async def cmd_start(message: Message, command: CommandObject = None):
                                 else:
                                     # Binding — пробуем выдать пробный ключ
                                     vpn_type = data.get('vpn_type', 'night')
-                                    vpn_label = {"night": "ОБХОД глушилок + VPN", "regular": "ULTRA FAST VPN", "fast": "Обычный VPN"}.get(vpn_type, "VPN")
+                                    vpn_label = {"night": "ОБХОД глушилок + VPN", "regular": "Обычный VPN", "fast": "Обычный VPN"}.get(vpn_type, "VPN")
                                     try:
                                         from asgiref.sync import sync_to_async
                                         from bot_management.models import Payment
@@ -2662,7 +2662,7 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
     
     # Получаем цену в зависимости от типа VPN
     if is_regular_vpn:
-        amount = ULTRA_FAST_VPN_PRICES.get(sub_type, 0)
+        amount = REGULAR_VPN_PRICES.get(sub_type, 0)
     elif is_fast_vpn:
         amount = FAST_VPN_PRICES.get(sub_type, 0)
     else:
@@ -2712,7 +2712,7 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
     
     sub_names = sub_names_regular if is_regular_vpn else (sub_names_fast if is_fast_vpn else sub_names_night)
     sub_name = sub_names.get(sub_type, 'Подписка')
-    vpn_label = "⚡ ULTRA FAST VPN" if is_regular_vpn else ("🚀 Обычный VPN" if is_fast_vpn else "🛡️ ОБХОД глушилок + VPN")
+    vpn_label = "Обычный VPN" if is_regular_vpn else ("🚀 Обычный VPN" if is_fast_vpn else "🛡️ ОБХОД глушилок + VPN")
 
     payment_text = f"""
 💳 <b>Выбор способа оплаты</b>
@@ -3079,7 +3079,7 @@ async def _send_key_message(callback, key: str, vpn_type: str, subscription_type
             vpn_label = "ОБХОД глушилок + VPN"
             key_button_text = "🛡️ Открыть ключ"
         elif vpn_type == 'regular':
-            vpn_label = "ULTRA FAST VPN"
+            vpn_label = "Обычный VPN"
             key_button_text = "⚡ Открыть ключ"
         elif vpn_type == 'fast':
             vpn_label = "Обычный VPN"
@@ -4212,7 +4212,7 @@ async def main_menu(callback: CallbackQuery):
     if is_admin(user_id):
         keyboard.append([
             InlineKeyboardButton(text="🔧 Админ-панель", callback_data="admin_panel"),
-            InlineKeyboardButton(text="📊 ⚡ ULTRA FAST VPN", callback_data="admin_regular_vpn_stats")
+            InlineKeyboardButton(text="📊 Обычный VPN", callback_data="admin_regular_vpn_stats")
         ])
 
     kb = InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -4410,7 +4410,7 @@ async def _show_pending_payment_message(callback: CallbackQuery, user_id: int, s
         'payment_method': payment_method,
     }
 
-    vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': '⚡ ULTRA FAST VPN', 'fast': '🚀 Обычный VPN'}
+    vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': 'Обычный VPN', 'fast': '🚀 Обычный VPN'}
     vpn_label = vpn_labels.get(vpn_type, 'VPN')
     sub_names = {'week': '1 неделя', 'month': '1 месяц', '3months': '3 месяца', '6months': '6 месяцев', 'year': '1 год', '2years': '2 года', 'day': '1 день'}
     sub_name = sub_names.get(subscription_type, 'Подписка')
@@ -4460,7 +4460,7 @@ async def _process_payment_confirmation(callback: CallbackQuery, user_id: int):
     else:
         full_sub_type = subscription_type
 
-    vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': '⚡ ULTRA FAST VPN', 'fast': '🚀 Обычный VPN'}
+    vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': 'Обычный VPN', 'fast': '🚀 Обычный VPN'}
     vpn_label = vpn_labels.get(vpn_type, 'VPN')
     sub_names = {'week': '1 неделя', 'month': '1 месяц', '3months': '3 месяца', '6months': '6 месяцев', 'year': '1 год', '2years': '2 года', 'day': '1 день'}
     sub_name = sub_names.get(subscription_type, 'Подписка')
@@ -4620,7 +4620,7 @@ async def promo_code_input_handler(message: Message, state: FSMContext):
                     data['promo_code_str'] = code
                     data['discount_percent'] = discount
 
-                    vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': '⚡ ULTRA FAST VPN', 'fast': '🚀 Обычный VPN'}
+                    vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': 'Обычный VPN', 'fast': '🚀 Обычный VPN'}
                     vpn_label = vpn_labels.get(data['vpn_type'], 'VPN')
                     sub_names = {'week': '1 неделя', 'month': '1 месяц', '3months': '3 месяца', '6months': '6 месяцев', 'year': '1 год', '2years': '2 года', 'day': '1 день'}
                     sub_name = sub_names.get(data['subscription_type'], 'Подписка')
@@ -4696,7 +4696,7 @@ async def pay_with_sbp(callback: CallbackQuery):
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
-        amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+        amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
         back_catalog = "catalog_regular_vpn"
     elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
@@ -4750,7 +4750,7 @@ async def pay_with_crypto(callback: CallbackQuery):
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
-        amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+        amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
     elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
@@ -4807,7 +4807,7 @@ async def pay_with_cryptobot(callback: CallbackQuery):
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
-        amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+        amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
     elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
@@ -4863,7 +4863,7 @@ async def pay_with_referral_balance(callback: CallbackQuery):
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
-        amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+        amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
     elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
@@ -4919,7 +4919,7 @@ async def pay_with_bank_card(callback: CallbackQuery):
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
-        amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+        amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
     elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
@@ -4957,7 +4957,7 @@ async def pay_with_bank_card(callback: CallbackQuery):
         '2years': '2 года'
     }
     sub_name = sub_names.get(subscription_type, 'Подписка')
-    vpn_label = "⚡ ULTRA FAST VPN" if vpn_type == 'regular' else ("🚀 Обычный VPN" if vpn_type == 'fast' else "🛡️ ОБХОД глушилок + VPN")
+    vpn_label = "Обычный VPN" if vpn_type == 'regular' else ("🚀 Обычный VPN" if vpn_type == 'fast' else "🛡️ ОБХОД глушилок + VPN")
 
     # Создаем платеж
     if DJANGO_INTEGRATION:
@@ -5046,7 +5046,7 @@ async def show_catalog(callback: CallbackQuery):
 • Стабильное соединение
 • Поддержка 24/7
 
-⚡ <b>ULTRA FAST VPN</b>
+⚡ <b>Обычный VPN</b>
 • Увеличенная скорость соединения по сравнению с обычным VPN
 • Высокий уровень анонимности
 • Огромный(!) выбор серверов
@@ -5152,14 +5152,14 @@ async def show_night_vpn_catalog(callback: CallbackQuery):
 
 @router.callback_query(F.data == "catalog_regular_vpn")
 async def show_regular_vpn_catalog(callback: CallbackQuery):
-    """Показать каталог ⚡ ULTRA FAST VPN"""
+    """Показать каталог Обычный VPN"""
     # Цены из config.py
-    day_price = ULTRA_FAST_VPN_PRICES.get('day', 19)
-    month_price = ULTRA_FAST_VPN_PRICES.get('month', 190)
-    three_months_price = ULTRA_FAST_VPN_PRICES.get('3months', 509)
-    six_months_price = ULTRA_FAST_VPN_PRICES.get('6months', 950)
-    year_price = ULTRA_FAST_VPN_PRICES.get('year', 1760)
-    two_years_price = ULTRA_FAST_VPN_PRICES.get('2years', 3150)
+    day_price = REGULAR_VPN_PRICES.get('day', 19)
+    month_price = REGULAR_VPN_PRICES.get('month', 190)
+    three_months_price = REGULAR_VPN_PRICES.get('3months', 509)
+    six_months_price = REGULAR_VPN_PRICES.get('6months', 950)
+    year_price = REGULAR_VPN_PRICES.get('year', 1760)
+    two_years_price = REGULAR_VPN_PRICES.get('2years', 3150)
 
     # Вычисляем экономию
     month_savings = (day_price * 30) - month_price
@@ -5169,7 +5169,7 @@ async def show_regular_vpn_catalog(callback: CallbackQuery):
     two_years_savings = (year_price * 2) - two_years_price
 
     catalog_text = f"""
-⚡ <b>ULTRA FAST VPN - Купить ключ</b>
+⚡ <b>Обычный VPN - Купить ключ</b>
 
 💎 <b>Выберите подходящую подписку:</b>
 
@@ -5386,11 +5386,11 @@ async def show_trial_key_info_night(callback: CallbackQuery):
 
 💳 <b>Доступные варианты:</b>
 • Приобрести полную подписку
-• Попробовать ⚡ ULTRA FAST VPN или 🚀 Обычный VPN (доступны пробные ключи)
+• Попробовать Обычный VPN или 🚀 Обычный VPN (доступны пробные ключи)
 """
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="💳 Купить подписку ОБХОД глушилок + VPN", callback_data="catalog_night_vpn")],
-            [InlineKeyboardButton(text="⚡ Попробовать ULTRA FAST VPN", callback_data="trial_key_info_regular")],
+            [InlineKeyboardButton(text="⚡ Попробовать Обычный VPN", callback_data="trial_key_info_regular")],
             [InlineKeyboardButton(text="🚀 Попробовать Обычный VPN", callback_data="trial_key_info_fast")],
             [InlineKeyboardButton(text="⬅️ Назад", callback_data="get_key_menu")]
         ])
@@ -5417,10 +5417,10 @@ async def show_trial_key_info_night(callback: CallbackQuery):
 
 @router.callback_query(F.data == "trial_key_info_regular")
 async def show_trial_key_info_regular(callback: CallbackQuery):
-    """Показать информацию о пробном ключе ⚡ ULTRA FAST VPN"""
+    """Показать информацию о пробном ключе Обычный VPN"""
     user_id = callback.from_user.id
     
-    # Проверяем, использовал ли пользователь пробный ключ ⚡ ULTRA FAST VPN
+    # Проверяем, использовал ли пользователь пробный ключ Обычный VPN
     trial_used = False
     if DJANGO_INTEGRATION:
         try:
@@ -5436,23 +5436,23 @@ async def show_trial_key_info_regular(callback: CallbackQuery):
     
     if trial_used:
         info_text = """
-❌ <b>Пробный ключ ⚡ ULTRA FAST VPN уже использован</b>
+❌ <b>Пробный ключ Обычный VPN уже использован</b>
 
-Вы уже использовали пробную подписку для ⚡ ULTRA FAST VPN.
+Вы уже использовали пробную подписку для Обычный VPN.
 
 💳 <b>Доступные варианты:</b>
 • Приобрести полную подписку
 • Попробовать ОБХОД глушилок + VPN или 🚀 Обычный VPN (доступны пробные ключи)
 """
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="💳 Купить подписку ⚡ ULTRA FAST VPN", callback_data="catalog_regular_vpn")],
+            [InlineKeyboardButton(text="💳 Купить подписку Обычный VPN", callback_data="catalog_regular_vpn")],
             [InlineKeyboardButton(text="🌙 Попробовать ОБХОД глушилок + VPN", callback_data="trial_key_info_night")],
             [InlineKeyboardButton(text="🚀 Попробовать Обычный VPN", callback_data="trial_key_info_fast")],
             [InlineKeyboardButton(text="⬅️ Назад", callback_data="get_key_menu")]
         ])
     else:
         info_text = """
-🎁 <b>Пробный ключ ⚡ ULTRA FAST VPN</b>
+🎁 <b>Пробный ключ Обычный VPN</b>
 
 ⚠️ <b>Внимание:</b> Ключ предоставляется только на 1 день и выдается единожды.
 
@@ -5464,7 +5464,7 @@ async def show_trial_key_info_regular(callback: CallbackQuery):
 <i>После привязки ключ придёт автоматически!</i>
 """
         kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🚀 Получить пробную подписку ⚡ ULTRA FAST VPN", callback_data="get_trial_key_regular")],
+            [InlineKeyboardButton(text="🚀 Получить пробную подписку Обычный VPN", callback_data="get_trial_key_regular")],
             [InlineKeyboardButton(text="⬅️ Назад", callback_data="get_key_menu")]
         ])
 
@@ -5487,9 +5487,9 @@ async def get_trial_key_night(callback: CallbackQuery):
 
 @router.callback_query(F.data == "get_trial_key_regular")
 async def get_trial_key_regular(callback: CallbackQuery):
-    """Выдать пробный ключ ⚡ ULTRA FAST VPN пользователю"""
+    """Выдать пробный ключ Обычный VPN пользователю"""
     user_id = callback.from_user.id
-    await issue_trial_key_for_vpn_type(callback, user_id, 'regular', '⚡ ULTRA FAST VPN')
+    await issue_trial_key_for_vpn_type(callback, user_id, 'regular', 'Обычный VPN')
 
 
 @router.callback_query(F.data == "trial_key_info_fast")
@@ -5560,12 +5560,12 @@ async def issue_trial_key_for_vpn_type(callback, user_id, vpn_type, vpn_label):
         return
 
     import aiohttp
-    from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+    from config import PRICES, REGULAR_VPN_PRICES, FAST_VPN_PRICES
 
     # При привязке карты будет выдан ключ на 3 дня, а при первом списании (через 1 день) - продлен на 30 дней
     trial_config = {
         'night': {'sub_type': 'trial', 'price': PRICES.get('month', 390)},
-        'regular': {'sub_type': 'regular_trial', 'price': ULTRA_FAST_VPN_PRICES.get('month', 190)},
+        'regular': {'sub_type': 'regular_trial', 'price': REGULAR_VPN_PRICES.get('month', 190)},
         'fast': {'sub_type': 'fast_trial', 'price': FAST_VPN_PRICES.get('month', 150)},
     }
     cfg = trial_config.get(vpn_type, trial_config['night'])
@@ -5873,14 +5873,14 @@ async def show_my_keys(callback: CallbackQuery):
                         if data.get('success') and data.get('keys'):
                             hidden = data.get('hidden_expired_count', 0)
                             # Считаем количество ключей каждого типа
-                            # ⚡ ULTRA FAST VPN: subscription_type начинается с 'regular'
+                            # Обычный VPN: subscription_type начинается с 'regular'
                             regular_count = sum(1 for key in data['keys'] if key.get('subscription_type', '').startswith('regular'))
                             night_count = len(data['keys']) - regular_count
                             
                             keys_text = "🔑 <b>Ваши ключи подписки</b>\n\n"
                             
                             if regular_count > 0:
-                                keys_text += f"🌍 <b>⚡ FAST VPN:</b> {regular_count} ключ(а)\n"
+                                keys_text += f"🌍 <b>Обычный VPN:</b> {regular_count} ключ(а)\n"
                             if night_count > 0:
                                 keys_text += f"🛡️ <b>ОБХОД глушилок + VPN:</b> {night_count} ключ(а)\n"
                             
@@ -5890,7 +5890,7 @@ async def show_my_keys(callback: CallbackQuery):
                                 keys_text += f"\n\n<i>🗑 {hidden} истекших ключ(а) скрыто</i>"
 
                             kb = InlineKeyboardMarkup(inline_keyboard=[
-                                [InlineKeyboardButton(text=f"⚡ FAST VPN ({regular_count})", callback_data="my_keys_regular")],
+                                [InlineKeyboardButton(text=f"Обычный VPN ({regular_count})", callback_data="my_keys_regular")],
                                 [InlineKeyboardButton(text=f"🛡️ ОБХОД глушилок + VPN ({night_count})", callback_data="my_keys_night")],
                                 [InlineKeyboardButton(text="🔄 Обновить", callback_data="my_keys")],
                                 [InlineKeyboardButton(text="⬅️ Главное меню", callback_data="main_menu")]
@@ -5950,14 +5950,14 @@ async def show_my_keys_regular(callback: CallbackQuery):
 
                         if data.get('success') and data.get('keys'):
                             hidden = data.get('hidden_expired_count', 0)
-                            # Фильтруем только ⚡ ULTRA FAST VPN (subscription_type начинается с 'regular')
+                            # Фильтруем только Обычный VPN (subscription_type начинается с 'regular')
                             regular_keys = [
                                 key for key in data['keys']
                                 if key.get('subscription_type', '').startswith('regular')
                             ]
 
                             if regular_keys:
-                                keys_text = "🌍 <b>⚡ ULTRA FAST VPN - Ваши ключи</b>\n\n"
+                                keys_text = "🌍 <b>Обычный VPN - Ваши ключи</b>\n\n"
                                 if hidden > 0:
                                     keys_text += f"<i>🗑 {hidden} истекших ключ(а) скрыто</i>\n\n"
                                 kb_buttons = []
@@ -6159,7 +6159,7 @@ async def show_key_detail(callback: CallbackQuery):
                                 return_callback = "my_keys_regular" if vpn_type == 'regular' else "my_keys_night"
 
                                 # Определяем тип VPN
-                                vpn_type_label = "⚡ ULTRA FAST VPN" if vpn_type == 'regular' else "🛡️ ОБХОД глушилок + VPN"
+                                vpn_type_label = "Обычный VPN" if vpn_type == 'regular' else "🛡️ ОБХОД глушилок + VPN"
 
                                 # Определяем тип подписки с учетом regular_ типов
                                 if subscription_type == 'trial':
@@ -6425,8 +6425,8 @@ async def renew_subscription_click(callback: CallbackQuery):
                 is_regular = vpn_type == 'regular'
                 
                 if is_regular:
-                    from config import ULTRA_FAST_VPN_PRICES
-                    prices = ULTRA_FAST_VPN_PRICES
+                    from config import REGULAR_VPN_PRICES
+                    prices = REGULAR_VPN_PRICES
                     sub_names = {
                         'day': '1 день',
                         'month': '1 месяц',
@@ -6435,7 +6435,7 @@ async def renew_subscription_click(callback: CallbackQuery):
                         'year': '1 год',
                         '2years': '2 года',
                     }
-                    vpn_label = "⚡ ULTRA FAST VPN"
+                    vpn_label = "Обычный VPN"
                 else:
                     # ОБХОД глушилок + VPN - получаем цены из API
                     from config import PRICES
@@ -6567,8 +6567,8 @@ async def process_renewal_payment(callback: CallbackQuery, payment_id: int, meth
 
                 # Определяем цену
                 if vpn_type == 'regular':
-                    from config import ULTRA_FAST_VPN_PRICES
-                    amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+                    from config import REGULAR_VPN_PRICES
+                    amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
                 elif vpn_type == 'fast':
                     from config import FAST_VPN_PRICES
                     amount = FAST_VPN_PRICES.get(subscription_type, 0)
@@ -6688,8 +6688,8 @@ async def process_renewal_payment_cryptobot(callback: CallbackQuery, payment_id:
                 subscription_type = old_payment.get('subscription_type', '')
 
                 if vpn_type == 'regular':
-                    from config import ULTRA_FAST_VPN_PRICES
-                    amount = ULTRA_FAST_VPN_PRICES.get(subscription_type, 0)
+                    from config import REGULAR_VPN_PRICES
+                    amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
                 else:
                     from config import PRICES
                     amount = PRICES.get(subscription_type, 0)
