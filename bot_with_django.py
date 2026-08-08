@@ -4719,13 +4719,7 @@ async def pay_with_crypto(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    else:
-        valid_types = ['week', 'month', '3months', '6months', 'year']
-        if subscription_type not in valid_types:
-            await callback.answer("❌ Неверный тип подписки", show_alert=True)
-            return
-        amount = FAST_VPN_PRICES.get(subscription_type, 0)
-    else:
+    elif vpn_type == 'fast':
         valid_types = ['week', 'trial', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4745,6 +4739,12 @@ async def pay_with_crypto(callback: CallbackQuery):
         except Exception as e:
             logging.error(f"Ошибка получения цены: {e}")
             amount = PRICES.get(subscription_type, 0)
+    else:  # night vpn
+        valid_types = ['week', 'month', '3months', '6months', 'year']
+        if subscription_type not in valid_types:
+            await callback.answer("❌ Неверный тип подписки", show_alert=True)
+            return
+        amount = FAST_VPN_PRICES.get(subscription_type, 0)
 
     # Определяем back_catalog
     back_catalog = "catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn")
@@ -4776,13 +4776,7 @@ async def pay_with_cryptobot(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    else:
-        valid_types = ['week', 'month', '3months', '6months', 'year']
-        if subscription_type not in valid_types:
-            await callback.answer("❌ Неверный тип подписки", show_alert=True)
-            return
-        amount = FAST_VPN_PRICES.get(subscription_type, 0)
-    else:
+    elif vpn_type == 'fast':
         valid_types = ['week', 'trial', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4802,6 +4796,12 @@ async def pay_with_cryptobot(callback: CallbackQuery):
         except Exception as e:
             logging.error(f"Ошибка получения цены: {e}")
             amount = PRICES.get(subscription_type, 0)
+    else:  # night vpn
+        valid_types = ['week', 'month', '3months', '6months', 'year']
+        if subscription_type not in valid_types:
+            await callback.answer("❌ Неверный тип подписки", show_alert=True)
+            return
+        amount = FAST_VPN_PRICES.get(subscription_type, 0)
 
     # Определяем back_catalog
     back_catalog = "catalog_regular_vpn" if vpn_type == 'regular' else ("catalog_fast_vpn" if vpn_type == 'fast' else "catalog_night_vpn")
@@ -4832,7 +4832,7 @@ async def pay_with_referral_balance(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    else:
+    elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4888,7 +4888,7 @@ async def pay_with_bank_card(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    else:
+    elif vpn_type == 'fast':
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4939,7 +4939,7 @@ async def pay_with_bank_card(callback: CallbackQuery):
                 vpn_type='regular'
             )
             back_catalog = "catalog_regular_vpn"
-        else:
+        elif vpn_type == 'fast':
             payment_data = await create_platega_payment(
                 user_id=user_id,
                 subscription_type=f'fast_{subscription_type}',
@@ -6542,7 +6542,7 @@ async def process_renewal_payment(callback: CallbackQuery, payment_id: int, meth
                 if vpn_type == 'regular':
                     from config import REGULAR_VPN_PRICES
                     amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-                else:
+                elif vpn_type == 'fast':
                     from config import FAST_VPN_PRICES
                     amount = FAST_VPN_PRICES.get(subscription_type, 0)
                 else:
