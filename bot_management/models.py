@@ -198,7 +198,6 @@ class SubscriptionKey(models.Model):
     VPN_TYPE_CHOICES = [
         ('night', 'ОБХОД глушилок + VPN'),
         ('regular', 'Обычный VPN'),
-        ('fast', 'Fast VPN'),
     ]
     
     SUBSCRIPTION_TYPES = [
@@ -213,11 +212,6 @@ class SubscriptionKey(models.Model):
         ('regular_6months', '6 месяцев (Обычный VPN)'),
         ('regular_year', '1 год (Обычный VPN)'),
         ('regular_2years', '2 года (Обычный VPN)'),
-        ('fast_day', '1 день (Обычный VPN)'),
-        ('fast_month', '1 месяц (Обычный VPN)'),
-        ('fast_3months', '3 месяца (Обычный VPN)'),
-        ('fast_6months', '6 месяцев (Обычный VPN)'),
-        ('fast_year', '1 год (Обычный VPN)'),
     ]
 
     ACTIVATION_CHOICES = [
@@ -281,13 +275,11 @@ class Payment(models.Model):
     VPN_TYPE_CHOICES = [
         ('night', 'ОБХОД глушилок + VPN'),
         ('regular', 'Обычный VPN'),
-        ('fast', 'Fast VPN'),
     ]
 
     SUBSCRIPTION_TYPES = [
         ('trial', 'Пробная (3 дня)'),
         ('regular_trial', 'Пробная Обычный VPN (3 дня)'),
-        ('fast_trial', 'Пробная Fast VPN (3 дня)'),
         ('month', 'Месячная'),
         ('3months', '3 месяца'),
         ('6months', '6 месяцев'),
@@ -298,11 +290,6 @@ class Payment(models.Model):
         ('regular_6months', '6 месяцев (Обычный VPN)'),
         ('regular_year', '1 год (Обычный VPN)'),
         ('regular_2years', '2 года (Обычный VPN)'),
-        ('fast_day', '1 день (Обычный VPN)'),
-        ('fast_month', '1 месяц (Обычный VPN)'),
-        ('fast_3months', '3 месяца (Обычный VPN)'),
-        ('fast_6months', '6 месяцев (Обычный VPN)'),
-        ('fast_year', '1 год (Обычный VPN)'),
     ]
 
     payment_id = models.AutoField(primary_key=True)

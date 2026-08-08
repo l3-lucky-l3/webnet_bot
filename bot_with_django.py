@@ -2632,12 +2632,9 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
     """Обработчик выбора подписки для всех типов VPN"""
     regular_vpn_types = ["sub_regular_day", "sub_regular_month", "sub_regular_3months", 
                          "sub_regular_6months", "sub_regular_year", "sub_regular_2years"]
-    fast_vpn_types = ["sub_fast_week", "sub_fast_month", "sub_fast_3months",
-                      "sub_fast_6months", "sub_fast_year"]
     
     is_regular_vpn = callback.data in regular_vpn_types
-    is_fast_vpn = callback.data in fast_vpn_types
-    vpn_type = "regular" if is_regular_vpn else ("fast" if is_fast_vpn else "night")
+    vpn_type = "regular" if is_regular_vpn else "night"
     
     sub_type_map = {
         "sub_night_week": "week",
@@ -2651,11 +2648,6 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
         "sub_regular_6months": "6months",
         "sub_regular_year": "year",
         "sub_regular_2years": "2years",
-        "sub_fast_week": "week",
-        "sub_fast_month": "month",
-        "sub_fast_3months": "3months",
-        "sub_fast_6months": "6months",
-        "sub_fast_year": "year",
     }
     
     sub_type = sub_type_map.get(callback.data, "month")
@@ -2663,8 +2655,6 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
     # Получаем цену в зависимости от типа VPN
     if is_regular_vpn:
         amount = REGULAR_VPN_PRICES.get(sub_type, 0)
-    elif is_fast_vpn:
-        amount = FAST_VPN_PRICES.get(sub_type, 0)
     else:
         # Для ОБХОД глушилок + VPN получаем цену из базы данных
         try:
@@ -2702,17 +2692,9 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
         '2years': '2 года'
     }
     
-    sub_names_fast = {
-        'week': '1 неделя',
-        'month': '1 месяц',
-        '3months': '3 месяца',
-        '6months': '6 месяцев',
-        'year': 'Годовая подписка'
-    }
-    
-    sub_names = sub_names_regular if is_regular_vpn else (sub_names_fast if is_fast_vpn else sub_names_night)
+    sub_names = sub_names_regular if is_regular_vpn else sub_names_night
     sub_name = sub_names.get(sub_type, 'Подписка')
-    vpn_label = "Обычный VPN" if is_regular_vpn else ("🚀 Обычный VPN" if is_fast_vpn else "🛡️ ОБХОД глушилок + VPN")
+    vpn_label = "Обычный VPN" if is_regular_vpn else "🛡️ ОБХОД глушилок + VPN"
 
     payment_text = f"""
 💳 <b>Выбор способа оплаты</b>
@@ -2727,8 +2709,6 @@ async def choose_subscription(callback: CallbackQuery, state: FSMContext):
     # Определяем callback_data для возврата
     if is_regular_vpn:
         back_callback = "catalog_regular_vpn"
-    elif is_fast_vpn:
-        back_callback = "catalog_fast_vpn"
     else:
         back_callback = "catalog_night_vpn"
 
@@ -3081,9 +3061,6 @@ async def _send_key_message(callback, key: str, vpn_type: str, subscription_type
         elif vpn_type == 'regular':
             vpn_label = "Обычный VPN"
             key_button_text = "⚡ Открыть ключ"
-        elif vpn_type == 'fast':
-            vpn_label = "Обычный VPN"
-            key_button_text = "🚀 Открыть ключ"
         else:
             vpn_label = "VPN"
             key_button_text = "🔑 Открыть ключ"
@@ -4455,8 +4432,8 @@ async def _process_payment_confirmation(callback: CallbackQuery, user_id: int):
 
     if vpn_type == 'regular':
         full_sub_type = f'regular_{subscription_type}'
-    elif vpn_type == 'fast':
-        full_sub_type = f'fast_{subscription_type}'
+    else:
+        # fast VPN удалён
     else:
         full_sub_type = subscription_type
 
@@ -4698,7 +4675,7 @@ async def pay_with_sbp(callback: CallbackQuery):
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
         back_catalog = "catalog_regular_vpn"
-    elif vpn_type == 'fast':
+    else:
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4751,7 +4728,7 @@ async def pay_with_crypto(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    elif vpn_type == 'fast':
+    else:
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4808,7 +4785,7 @@ async def pay_with_cryptobot(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    elif vpn_type == 'fast':
+    else:
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4864,7 +4841,7 @@ async def pay_with_referral_balance(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    elif vpn_type == 'fast':
+    else:
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4920,7 +4897,7 @@ async def pay_with_bank_card(callback: CallbackQuery):
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-    elif vpn_type == 'fast':
+    else:
         valid_types = ['week', 'month', '3months', '6months', 'year']
         if subscription_type not in valid_types:
             await callback.answer("❌ Неверный тип подписки", show_alert=True)
@@ -4971,7 +4948,7 @@ async def pay_with_bank_card(callback: CallbackQuery):
                 vpn_type='regular'
             )
             back_catalog = "catalog_regular_vpn"
-        elif vpn_type == 'fast':
+        else:
             payment_data = await create_platega_payment(
                 user_id=user_id,
                 subscription_type=f'fast_{subscription_type}',
@@ -5047,10 +5024,9 @@ async def show_catalog(callback: CallbackQuery):
 • Поддержка 24/7
 
 ⚡ <b>Обычный VPN</b>
-• Увеличенная скорость соединения по сравнению с обычным VPN
-• Высокий уровень анонимности
-• Огромный(!) выбор серверов
+• Недорогой быстрый VPN для повседневных задач
 • Поддержка 24/7
+• Не обходит белые списки
 
 🚀 <b>Обычный VPN</b>
 • Недорогой быстрый VPN для повседневных задач
@@ -5173,9 +5149,8 @@ async def show_regular_vpn_catalog(callback: CallbackQuery):
 
 💎 <b>Выберите подходящую подписку:</b>
 
-• Увеличенная скорость соединения
-• Высокий уровень анонимности
-• Огромный(!) выбор серверов
+• Недорогой быстрый VPN для повседневных задач
+• Не обходит белые списки
 
 ⚡ <b>1 день</b>
 • Стоимость: {day_price} ₽
@@ -5246,13 +5221,14 @@ async def show_fast_vpn_catalog(callback: CallbackQuery):
 
 • Недорогой быстрый VPN для повседневных задач
 
-📅 <b>1 неделя</b>
-• Стоимость: {week_price} ₽
-• Срок действия: 7 дней
+📅 <b>1 день</b>
+• Стоимость: {day_price} ₽
+• Срок действия: 24 часа
 
 📅 <b>1 месяц</b>
 • Стоимость: {month_price} ₽
 • Срок действия: 30 дней
+{f'• 💰 <b>Экономия: {month_savings} ₽</b>' if month_savings > 0 else ''}
 
 📅 <b>3 месяца</b>
 • Стоимость: {three_months_price} ₽
@@ -5264,10 +5240,15 @@ async def show_fast_vpn_catalog(callback: CallbackQuery):
 • Срок действия: 180 дней
 {f'• 💰 <b>Экономия: {six_months_savings} ₽</b>' if six_months_savings > 0 else ''}
 
-📅 <b>12 месяцев (год)</b>
+📅 <b>1 год</b>
 • Стоимость: {year_price} ₽
 • Срок действия: 365 дней
 {f'• 💰 <b>Экономия: {year_savings} ₽</b>' if year_savings > 0 else ''}
+
+📅 <b>2 года</b>
+• Стоимость: {two_years_price} ₽
+• Срок действия: 730 дней
+{f'• 💰 <b>Экономия: {two_years_savings} ₽</b>' if two_years_savings > 0 else ''}
 
 ✅ <b>Автоматическая генерация ключей</b>
 ✅ <b>Поддержка 24/7</b>
@@ -5276,11 +5257,12 @@ async def show_fast_vpn_catalog(callback: CallbackQuery):
 """
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=f"📅 1 неделя - {week_price} ₽", callback_data="sub_fast_week")],
-        [InlineKeyboardButton(text=f"📅 1 месяц - {month_price} ₽", callback_data="sub_fast_month")],
-        [InlineKeyboardButton(text=f"📅 3 месяца - {three_months_price} ₽", callback_data="sub_fast_3months")],
-        [InlineKeyboardButton(text=f"📅 6 месяцев - {six_months_price} ₽", callback_data="sub_fast_6months")],
-        [InlineKeyboardButton(text=f"📅 12 месяцев - {year_price} ₽", callback_data="sub_fast_year")],
+        [InlineKeyboardButton(text=f"📅 1 день - {day_price} ₽", callback_data="sub_regular_day")],
+        [InlineKeyboardButton(text=f"📅 1 месяц - {month_price} ₽", callback_data="sub_regular_month")],
+        [InlineKeyboardButton(text=f"📅 3 месяца - {three_months_price} ₽", callback_data="sub_regular_3months")],
+        [InlineKeyboardButton(text=f"📅 6 месяцев - {six_months_price} ₽", callback_data="sub_regular_6months")],
+        [InlineKeyboardButton(text=f"📅 1 год - {year_price} ₽", callback_data="sub_regular_year")],
+        [InlineKeyboardButton(text=f"📅 2 года - {two_years_price} ₽", callback_data="sub_regular_2years")],
         [InlineKeyboardButton(text="⬅️ Назад", callback_data="catalog")],
         [InlineKeyboardButton(text="⬅️ Главное меню", callback_data="main_menu")]
     ])
@@ -6569,7 +6551,7 @@ async def process_renewal_payment(callback: CallbackQuery, payment_id: int, meth
                 if vpn_type == 'regular':
                     from config import REGULAR_VPN_PRICES
                     amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
-                elif vpn_type == 'fast':
+                else:
                     from config import FAST_VPN_PRICES
                     amount = FAST_VPN_PRICES.get(subscription_type, 0)
                 else:
