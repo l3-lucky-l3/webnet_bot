@@ -4673,33 +4673,26 @@ async def pay_with_sbp(callback: CallbackQuery):
             return
         amount = REGULAR_VPN_PRICES.get(subscription_type, 0)
         back_catalog = "catalog_regular_vpn"
-    else:
-        valid_types = ['week', 'month', '3months', '6months', 'year']
-        if subscription_type not in valid_types:
-            await callback.answer("❌ Неверный тип подписки", show_alert=True)
-            return
-        amount = FAST_VPN_PRICES.get(subscription_type, 0)
-        back_catalog = "catalog_fast_vpn"
-    else:
-        valid_types = ['week', 'trial', 'month', '3months', '6months', 'year']
-        if subscription_type not in valid_types:
-            await callback.answer("❌ Неверный тип подписки", show_alert=True)
-            return
-        try:
-            import aiohttp
-            api_url = f'{DJANGO_API_URL}/bot_management/api/prices/get/'
-            async with aiohttp.ClientSession() as session:
-                async with session.get(api_url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        prices = data.get('prices', {})
-                        amount = prices.get(subscription_type, PRICES.get(subscription_type, 0))
-                    else:
-                        amount = PRICES.get(subscription_type, 0)
-        except Exception as e:
-            logging.error(f"Ошибка получения цены: {e}")
-            amount = PRICES.get(subscription_type, 0)
-        back_catalog = "catalog_night_vpn"
+    
+    valid_types = ['week', 'trial', 'month', '3months', '6months', 'year']
+    if subscription_type not in valid_types:
+        await callback.answer("❌ Неверный тип подписки", show_alert=True)
+        return
+    try:
+        import aiohttp
+        api_url = f'{DJANGO_API_URL}/bot_management/api/prices/get/'
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    prices = data.get('prices', {})
+                    amount = prices.get(subscription_type, PRICES.get(subscription_type, 0))
+                else:
+                    amount = PRICES.get(subscription_type, 0)
+    except Exception as e:
+        logging.error(f"Ошибка получения цены: {e}")
+        amount = PRICES.get(subscription_type, 0)
+    back_catalog = "catalog_night_vpn"
 
     await _show_pending_payment_message(callback, user_id, subscription_type, vpn_type, amount, back_catalog, payment_method="SBP")
 
