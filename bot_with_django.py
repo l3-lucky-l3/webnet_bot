@@ -4433,8 +4433,6 @@ async def _process_payment_confirmation(callback: CallbackQuery, user_id: int):
     if vpn_type == 'regular':
         full_sub_type = f'regular_{subscription_type}'
     else:
-        # fast VPN удалён
-    else:
         full_sub_type = subscription_type
 
     vpn_labels = {'night': '🛡️ ОБХОД глушилок + VPN', 'regular': 'Обычный VPN', 'fast': '🚀 Обычный VPN'}
