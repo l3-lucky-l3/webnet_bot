@@ -18,8 +18,8 @@ PRICES = {
     "year": 3900,
 }
 
-# Цены для ⚡ ULTRA FAST VPN (бывший Обычный VPN, Remnawave)
-ULTRA_FAST_VPN_PRICES = {
+# Цены для Обычный VPN (Remnawave) - тип подписки "regular_*"
+REGULAR_VPN_PRICES = {
     "day": 19,
     "month": 190,
     "3months": 509,
@@ -28,7 +28,7 @@ ULTRA_FAST_VPN_PRICES = {
     "2years": 3150,
 }
 
-ULTRA_FAST_VPN_PROFIT = {
+REGULAR_VPN_PROFIT = {
     "day": 5,
     "month": 25,
     "3months": 70,
@@ -114,7 +114,6 @@ REMNAWAVE_EXPIRED_SUBSCRIPTION_SQUAD_UUID = os.getenv("REMNAWAVE_EXPIRED_SUBSCRI
 FGN_CONNECTION_BASE_URL = os.getenv("FGN_CONNECTION_BASE_URL", "https://aprs.fgnconnection.xyz").rstrip('/')
 FGN_CONNECTION_TOKEN = os.getenv("FGN_CONNECTION_TOKEN", "")
 
-REGULAR_VPN_PRICES = ULTRA_FAST_VPN_PRICES
 
 # SOCKS5 прокси для Telegram API
 TELEGRAM_PROXY = os.getenv("TELEGRAM_PROXY", "").strip() if os.getenv("TELEGRAM_PROXY") else None

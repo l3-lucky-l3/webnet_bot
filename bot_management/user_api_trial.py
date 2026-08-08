@@ -245,7 +245,7 @@ def issue_trial_key(request, user_id):
                             'error': f'Ошибка: {str(e)}'
                         })
 
-            # Для Regular VPN (ULTRA FAST VPN) — выдаём ключ через Remnawave API
+            # Для Regular VPN (Обычный VPN) — выдаём ключ через Remnawave API
             if vpn_type == 'regular':
                 from .regular_vpn_service import process_regular_vpn_payment_success_sync_with_retry
                 
@@ -267,7 +267,7 @@ def issue_trial_key(request, user_id):
                             'issued_key': key_value,
                             'expires_at': expires_str,
                             'vpn_type': vpn_type,
-                            'vpn_label': 'ULTRA FAST VPN'
+                            'vpn_label': 'Обычный VPN'
                         }
                         
                         return JsonResponse(response_data)
@@ -357,7 +357,7 @@ def issue_trial_key(request, user_id):
                 else:
                     expires_str = 'неизвестно'
 
-                vpn_label = 'ULTRA FAST VPN' if vpn_type == 'regular' else ('Обычный VPN' if vpn_type == 'fast' else 'Night VPN')
+                vpn_label = 'Обычный VPN' if vpn_type == 'regular' else ('Обычный VPN' if vpn_type == 'fast' else 'Night VPN')
                 return JsonResponse({
                     'success': True,
                     'issued_key': payment.issued_key,

@@ -1,5 +1,5 @@
 """
-Сервис для обработки платежей ⚡ ULTRA FAST VPN (бывший Обычный VPN, Remnawave)
+Сервис для обработки платежей Обычный VPN (бывший Обычный VPN, Remnawave)
 Автоматическая генерация ключей через Remnawave API
 """
 
@@ -173,7 +173,7 @@ async def create_regular_vpn_payment(
     amount: float
 ) -> Optional[Dict[str, Any]]:
     """
-    Создать платеж для ⚡ ULTRA FAST VPN
+    Создать платеж для Обычный VPN
     
     Args:
         user_id: Telegram ID пользователя
@@ -199,7 +199,7 @@ async def create_regular_vpn_payment(
             status='pending'
         )
         
-        logger.info(f"Создан платеж {payment.payment_id} для ⚡ ULTRA FAST VPN, пользователь {user_id}")
+        logger.info(f"Создан платеж {payment.payment_id} для Обычный VPN, пользователь {user_id}")
         
         return {
             'success': True,
@@ -219,7 +219,7 @@ def process_regular_vpn_payment_success_sync(
     skip_notification: bool = False
 ) -> Optional[Dict[str, Any]]:
     """
-    Обработать успешный платеж для ⚡ ULTRA FAST VPN (СИНХРОННАЯ ВЕРСИЯ)
+    Обработать успешный платеж для Обычный VPN (СИНХРОННАЯ ВЕРСИЯ)
     Генерирует ключ через Remnawave API
 
     Args:
@@ -389,7 +389,7 @@ def process_regular_vpn_payment_success_sync(
             payment.subscription_expires_at = timezone.now() + timedelta(days=duration_days)
             payment.save()
 
-            logger.info(f"Платеж {payment_id}: Успешная оплата ⚡ ULTRA FAST VPN. Ключ {subscription_key_obj.key_id}")
+            logger.info(f"Платеж {payment_id}: Успешная оплата Обычный VPN. Ключ {subscription_key_obj.key_id}")
 
             # Отправляем уведомление пользователю (только если не skip_notification)
             if not skip_notification:
@@ -476,7 +476,7 @@ def process_regular_vpn_payment_success_sync_with_retry(
 
 async def get_user_regular_vpn_keys(user_id: int) -> list:
     """
-    Получить все ключи ⚡ ULTRA FAST VPN пользователя
+    Получить все ключи Обычный VPN пользователя
 
     Args:
         user_id: Telegram ID пользователя
@@ -513,7 +513,7 @@ async def extend_regular_vpn_subscription(
     subscription_type: str
 ) -> Optional[Dict[str, Any]]:
     """
-    Продлить подписку ⚡ ULTRA FAST VPN
+    Продлить подписку Обычный VPN
     
     Args:
         user_id: Telegram ID пользователя

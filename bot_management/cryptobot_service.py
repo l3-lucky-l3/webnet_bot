@@ -61,19 +61,19 @@ class CryptobotService:
                     '6months': '6 месяцев',
                     'year': 'Годовая подписка',
                     'trial': 'Пробная подписка',
-                    'regular_day': '1 день (ULTRA FAST VPN)',
-                    'regular_month': '1 месяц (ULTRA FAST VPN)',
-                    'regular_3months': '3 месяца (ULTRA FAST VPN)',
-                    'regular_6months': '6 месяцев (ULTRA FAST VPN)',
-                    'regular_year': '1 год (ULTRA FAST VPN)',
-                    'regular_2years': '2 года (ULTRA FAST VPN)',
+                    'regular_day': '1 день (Обычный VPN)',
+                    'regular_month': '1 месяц (Обычный VPN)',
+                    'regular_3months': '3 месяца (Обычный VPN)',
+                    'regular_6months': '6 месяцев (Обычный VPN)',
+                    'regular_year': '1 год (Обычный VPN)',
+                    'regular_2years': '2 года (Обычный VPN)',
                     'fast_week': '1 неделя (Обычный VPN)',
                     'fast_month': '1 месяц (Обычный VPN)',
                     'fast_3months': '3 месяца (Обычный VPN)',
                     'fast_6months': '6 месяцев (Обычный VPN)',
                     'fast_year': '1 год (Обычный VPN)',
                 }
-                vpn_label = "ULTRA FAST VPN" if payment_model.vpn_type == 'regular' else ("Обычный VPN" if payment_model.vpn_type == 'fast' else "Night VPN")
+                vpn_label = "Обычный VPN" if payment_model.vpn_type == 'regular' else ("Обычный VPN" if payment_model.vpn_type == 'fast' else "Night VPN")
                 sub_name = subscription_names.get(payment_model.subscription_type, payment_model.subscription_type)
                 description = f"{vpn_label}: {sub_name}"
 
@@ -264,7 +264,7 @@ class CryptobotService:
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
 
             if is_regular_vpn:
-                logger.info(f"Платеж {payment_model.payment_id} - ULTRA FAST VPN, генерируем ключ через Remnawave")
+                logger.info(f"Платеж {payment_model.payment_id} - Обычный VPN, генерируем ключ через Remnawave")
                 return CryptobotService._handle_regular_vpn_payment_success(payment_model)
             elif is_fast_vpn:
                 logger.info(f"Платеж {payment_model.payment_id} - Обычный VPN, генерируем ключ через bypass API")

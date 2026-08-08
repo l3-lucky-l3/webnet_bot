@@ -39,12 +39,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='payment',
             name='vpn_type',
-            field=models.CharField(choices=[('night', 'ОБХОД глушилок + VPN'), ('regular', '⚡ ULTRA FAST VPN'), ('fast', 'Обычный VPN')], db_index=True, default='night', max_length=10, verbose_name='Тип VPN'),
+            field=models.CharField(choices=[('night', 'ОБХОД глушилок + VPN'), ('regular', 'Обычный VPN'), ('fast', 'Обычный VPN')], db_index=True, default='night', max_length=10, verbose_name='Тип VPN'),
         ),
         migrations.AlterField(
             model_name='subscriptionkey',
             name='vpn_type',
-            field=models.CharField(choices=[('night', 'ОБХОД глушилок + VPN'), ('regular', '⚡ ULTRA FAST VPN'), ('fast', 'Обычный VPN')], db_index=True, default='night', max_length=10, verbose_name='Тип VPN'),
+            field=models.CharField(choices=[('night', 'ОБХОД глушилок + VPN'), ('regular', 'Обычный VPN'), ('fast', 'Обычный VPN')], db_index=True, default='night', max_length=10, verbose_name='Тип VPN'),
         ),
         migrations.AddField(
             model_name='payment',

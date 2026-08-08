@@ -396,10 +396,10 @@ async def create_antilopay_payment(user_id: int, subscription_type: str, return_
                                 fast_type = subscription_type.replace('fast_', '')
                                 amount = prices.get(fast_type, 0)
                         else:
-                            from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+                            from config import PRICES, REGULAR_VPN_PRICES, FAST_VPN_PRICES
                             if subscription_type.startswith('regular_'):
                                 regular_type = subscription_type.replace('regular_', '')
-                                amount = ULTRA_FAST_VPN_PRICES.get(regular_type, 0)
+                                amount = REGULAR_VPN_PRICES.get(regular_type, 0)
                             elif subscription_type.startswith('fast_'):
                                 fast_type = subscription_type.replace('fast_', '')
                                 amount = FAST_VPN_PRICES.get(fast_type, 0)
@@ -407,10 +407,10 @@ async def create_antilopay_payment(user_id: int, subscription_type: str, return_
                                 amount = PRICES.get(subscription_type, 0)
             except Exception as e:
                 logger.error(f"Ошибка получения цены из API: {e}")
-                from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+                from config import PRICES, REGULAR_VPN_PRICES, FAST_VPN_PRICES
                 if subscription_type.startswith('regular_'):
                     regular_type = subscription_type.replace('regular_', '')
-                    amount = ULTRA_FAST_VPN_PRICES.get(regular_type, 0)
+                    amount = REGULAR_VPN_PRICES.get(regular_type, 0)
                 elif subscription_type.startswith('fast_'):
                     fast_type = subscription_type.replace('fast_', '')
                     amount = FAST_VPN_PRICES.get(fast_type, 0)
@@ -475,10 +475,10 @@ async def create_referral_payment(user_id: int, subscription_type: str, return_u
                                 fast_type = subscription_type.replace('fast_', '')
                                 amount = prices.get(fast_type, 0)
                         else:
-                            from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+                            from config import PRICES, REGULAR_VPN_PRICES, FAST_VPN_PRICES
                             if subscription_type.startswith('regular_'):
                                 regular_type = subscription_type.replace('regular_', '')
-                                amount = ULTRA_FAST_VPN_PRICES.get(regular_type, 0)
+                                amount = REGULAR_VPN_PRICES.get(regular_type, 0)
                             elif subscription_type.startswith('fast_'):
                                 fast_type = subscription_type.replace('fast_', '')
                                 amount = FAST_VPN_PRICES.get(fast_type, 0)
@@ -486,10 +486,10 @@ async def create_referral_payment(user_id: int, subscription_type: str, return_u
                                 amount = PRICES.get(subscription_type, 0)
             except Exception as e:
                 logger.error(f"Ошибка получения цены из API: {e}")
-                from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
+                from config import PRICES, REGULAR_VPN_PRICES, FAST_VPN_PRICES
                 if subscription_type.startswith('regular_'):
                     regular_type = subscription_type.replace('regular_', '')
-                    amount = ULTRA_FAST_VPN_PRICES.get(regular_type, 0)
+                    amount = REGULAR_VPN_PRICES.get(regular_type, 0)
                 elif subscription_type.startswith('fast_'):
                     fast_type = subscription_type.replace('fast_', '')
                     amount = FAST_VPN_PRICES.get(fast_type, 0)

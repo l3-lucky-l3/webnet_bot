@@ -18,6 +18,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='telegramuser',
             name='trial_key_used_regular',
-            field=models.BooleanField(db_index=True, default=False, verbose_name='Использован пробный ключ ULTRA FAST VPN'),
+            field=models.BooleanField(db_index=True, default=False, verbose_name='Использован пробный ключ Обычный VPN'),
         ),
     ]

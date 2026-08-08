@@ -104,12 +104,12 @@ class AntilopayService:
                 '3months': '3 месяца',
                 '6months': '6 месяцев',
                 'year': 'Годовая подписка',
-                'regular_day': '1 день (ULTRA FAST VPN)',
-                'regular_month': '1 месяц (ULTRA FAST VPN)',
-                'regular_3months': '3 месяца (ULTRA FAST VPN)',
-                'regular_6months': '6 месяцев (ULTRA FAST VPN)',
-                'regular_year': '1 год (ULTRA FAST VPN)',
-                'regular_2years': '2 года (ULTRA FAST VPN)',
+                'regular_day': '1 день (Обычный VPN)',
+                'regular_month': '1 месяц (Обычный VPN)',
+                'regular_3months': '3 месяца (Обычный VPN)',
+                'regular_6months': '6 месяцев (Обычный VPN)',
+                'regular_year': '1 год (Обычный VPN)',
+                'regular_2years': '2 года (Обычный VPN)',
                 'fast_week': '1 неделя (Обычный VPN)',
                 'fast_month': '1 месяц (Обычный VPN)',
                 'fast_3months': '3 месяца (Обычный VPN)',
@@ -927,7 +927,7 @@ class AntilopayService:
             is_fast_vpn = (vpn_type == 'fast') or subscription_type.startswith('fast_')
 
             if is_regular_vpn:
-                logger.info(f"Платеж {payment_model.payment_id} - ULTRA FAST VPN, генерируем ключ через Remnawave")
+                logger.info(f"Платеж {payment_model.payment_id} - Обычный VPN, генерируем ключ через Remnawave")
                 from .platega_service import PlategaService
                 return PlategaService._handle_regular_vpn_payment_success(payment_model, skip_notification=skip_notification)
             elif is_fast_vpn:
@@ -1037,7 +1037,7 @@ class AntilopayService:
                 vpn_label = "ОБХОД глушилок + VPN"
                 key_button_text = "🛡️ Открыть ключ"
             elif vpn_type == 'regular':
-                vpn_label = "ULTRA FAST VPN"
+                vpn_label = "Обычный VPN"
                 key_button_text = "⚡ Открыть ключ"
             elif vpn_type == 'fast':
                 vpn_label = "Обычный VPN"
@@ -1113,7 +1113,7 @@ class AntilopayService:
                 vpn_label = "ОБХОД глушилок + VPN"
                 key_button_text = "🛡️ Открыть ключ"
             elif vpn_type == 'regular':
-                vpn_label = "ULTRA FAST VPN"
+                vpn_label = "Обычный VPN"
                 key_button_text = "⚡ Открыть ключ"
             elif vpn_type == 'fast':
                 vpn_label = "Обычный VPN"

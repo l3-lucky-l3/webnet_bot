@@ -1,37 +1,42 @@
 ```
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Database
-*.db
-*.db.*
-
-# Logs
-*.log
-
-# Temporary files
-*.tmp
-*.swp
-*.swo
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Dependencies
-.venv/
+# Virtual Environment
 venv/
-pip-log.txt
-pipenv.lock
+ENV/
+env/
+.venv/
+env.bak/
+ENV.bak/
 
-# Coverage
-.coverage
-coverage/
-htmlcov/
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+.env
 
 # IDE
 .vscode/
@@ -40,6 +45,23 @@ htmlcov/
 *.swo
 
 # OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+.coverage
+htmlcov/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Miscellaneous
+*.tmp
+*.temp
+*~
 .DS_Store
 Thumbs.db
 ```

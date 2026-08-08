@@ -74,7 +74,7 @@ class TelegramUser(models.Model):
     first_entry_method = models.CharField(max_length=20, choices=ENTRY_METHOD_CHOICES, null=True, blank=True, verbose_name="Способ первого входа", db_index=True)
     multi_level_referral_enabled = models.BooleanField(default=False, verbose_name="Включена многоуровневая реферальная система")
     trial_key_used_night = models.BooleanField(default=False, verbose_name="Использован пробный ключ Night VPN", db_index=True)
-    trial_key_used_regular = models.BooleanField(default=False, verbose_name="Использован пробный ключ ULTRA FAST VPN", db_index=True)
+    trial_key_used_regular = models.BooleanField(default=False, verbose_name="Использован пробный ключ Обычный VPN", db_index=True)
     trial_key_used_fast = models.BooleanField(default=False, verbose_name="Использован пробный ключ Обычный VPN", db_index=True)
     is_banned = models.BooleanField(default=False, verbose_name="Забанен", db_index=True)
     ban_reason = models.CharField(max_length=255, blank=True, default='', verbose_name="Причина бана")
@@ -197,8 +197,8 @@ class ReferralBalanceTransaction(models.Model):
 class SubscriptionKey(models.Model):
     VPN_TYPE_CHOICES = [
         ('night', 'ОБХОД глушилок + VPN'),
-        ('regular', '⚡ ULTRA FAST VPN'),
-        ('fast', 'Обычный VPN'),
+        ('regular', 'Обычный VPN'),
+        ('fast', 'Fast VPN'),
     ]
     
     SUBSCRIPTION_TYPES = [
@@ -207,12 +207,12 @@ class SubscriptionKey(models.Model):
         ('3months', '3 месяца'),
         ('6months', '6 месяцев'),
         ('year', 'Годовая'),
-        ('regular_day', '1 день (ULTRA FAST)'),
-        ('regular_month', '1 месяц (ULTRA FAST)'),
-        ('regular_3months', '3 месяца (ULTRA FAST)'),
-        ('regular_6months', '6 месяцев (ULTRA FAST)'),
-        ('regular_year', '1 год (ULTRA FAST)'),
-        ('regular_2years', '2 года (ULTRA FAST)'),
+        ('regular_day', '1 день (Обычный VPN)'),
+        ('regular_month', '1 месяц (Обычный VPN)'),
+        ('regular_3months', '3 месяца (Обычный VPN)'),
+        ('regular_6months', '6 месяцев (Обычный VPN)'),
+        ('regular_year', '1 год (Обычный VPN)'),
+        ('regular_2years', '2 года (Обычный VPN)'),
         ('fast_day', '1 день (Обычный VPN)'),
         ('fast_month', '1 месяц (Обычный VPN)'),
         ('fast_3months', '3 месяца (Обычный VPN)'),
@@ -280,24 +280,24 @@ class Payment(models.Model):
 
     VPN_TYPE_CHOICES = [
         ('night', 'ОБХОД глушилок + VPN'),
-        ('regular', '⚡ ULTRA FAST VPN'),
-        ('fast', 'Обычный VPN'),
+        ('regular', 'Обычный VPN'),
+        ('fast', 'Fast VPN'),
     ]
 
     SUBSCRIPTION_TYPES = [
         ('trial', 'Пробная (3 дня)'),
-        ('regular_trial', 'Пробная ULTRA FAST (3 дня)'),
-        ('fast_trial', 'Пробная Обычный VPN (3 дня)'),
+        ('regular_trial', 'Пробная Обычный VPN (3 дня)'),
+        ('fast_trial', 'Пробная Fast VPN (3 дня)'),
         ('month', 'Месячная'),
         ('3months', '3 месяца'),
         ('6months', '6 месяцев'),
         ('year', 'Годовая'),
-        ('regular_day', '1 день (ULTRA FAST)'),
-        ('regular_month', '1 месяц (ULTRA FAST)'),
-        ('regular_3months', '3 месяца (ULTRA FAST)'),
-        ('regular_6months', '6 месяцев (ULTRA FAST)'),
-        ('regular_year', '1 год (ULTRA FAST)'),
-        ('regular_2years', '2 года (ULTRA FAST)'),
+        ('regular_day', '1 день (Обычный VPN)'),
+        ('regular_month', '1 месяц (Обычный VPN)'),
+        ('regular_3months', '3 месяца (Обычный VPN)'),
+        ('regular_6months', '6 месяцев (Обычный VPN)'),
+        ('regular_year', '1 год (Обычный VPN)'),
+        ('regular_2years', '2 года (Обычный VPN)'),
         ('fast_day', '1 день (Обычный VPN)'),
         ('fast_month', '1 месяц (Обычный VPN)'),
         ('fast_3months', '3 месяца (Обычный VPN)'),

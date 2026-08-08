@@ -85,28 +85,28 @@ class PaymentService:
         if getattr(payment, 'is_renewal', False) and payment.renewal_for_payment:
             return self._confirm_renewal_payment(payment)
 
-        # Для ULTRA FAST VPN (бывший Regular VPN) используем Remnawave API
+        # Для Обычный VPN (бывший Regular VPN) используем Remnawave API
         if vpn_type == 'regular':
             try:
-                logger.info(f"DEBUG: Обработка платежа ULTRA FAST VPN {payment.payment_id} через Remnawave API")
+                logger.info(f"DEBUG: Обработка платежа Обычный VPN {payment.payment_id} через Remnawave API")
                 from .regular_vpn_service import process_regular_vpn_payment_success_sync_with_retry
 
                 result = process_regular_vpn_payment_success_sync_with_retry(payment.payment_id)
 
                 if result and result.get('success'):
-                    logger.info(f"DEBUG: Платеж ULTRA FAST VPN {payment.payment_id} успешно обработан")
+                    logger.info(f"DEBUG: Платеж Обычный VPN {payment.payment_id} успешно обработан")
                     payment.refresh_from_db()
                     self._save_profit(payment)
                     payment_confirmed = True
                 else:
                     error_msg = result.get('error', 'Неизвестная ошибка') if result else 'Remnawave API вернул пустой ответ'
-                    logger.error(f"DEBUG: Ошибка обработки платежа ULTRA FAST VPN {payment.payment_id}: {error_msg}")
+                    logger.error(f"DEBUG: Ошибка обработки платежа Обычный VPN {payment.payment_id}: {error_msg}")
                     payment.status = 'failed'
                     payment.save()
                     self._send_api_error_notification(payment, error_msg)
                 return payment_confirmed
             except Exception as e:
-                logger.error(f"DEBUG: Исключение при обработке платежа ULTRA FAST VPN {payment.payment_id}: {e}")
+                logger.error(f"DEBUG: Исключение при обработке платежа Обычный VPN {payment.payment_id}: {e}")
                 import traceback
                 logger.error(f"DEBUG: Traceback: {traceback.format_exc()}")
                 payment.status = 'failed'
@@ -474,7 +474,7 @@ class PaymentService:
             return True
 
         except Exception as e:
-            logger.error(f"Ошибка продления ULTRA FAST VPN: {e}")
+            logger.error(f"Ошибка продления Обычный VPN: {e}")
             import traceback
             logger.error(traceback.format_exc())
             return False
@@ -976,14 +976,14 @@ class PaymentService:
     def _save_profit(self, payment: Payment):
         """Рассчитывает и сохраняет чистую прибыль для платежа"""
         try:
-            from config import ULTRA_FAST_VPN_PROFIT
+            from config import REGULAR_VPN_PROFIT
 
             vpn_type = getattr(payment, 'vpn_type', 'night')
             sub_type = payment.subscription_type
 
             if vpn_type == 'regular':
                 sub = sub_type.replace('regular_', '')
-                payment.profit = ULTRA_FAST_VPN_PROFIT.get(sub, 0)
+                payment.profit = REGULAR_VPN_PROFIT.get(sub, 0)
             elif vpn_type == 'fast':
                 payment.profit = payment.amount
             elif vpn_type == 'night':
@@ -1409,7 +1409,7 @@ class PaymentService:
         try:
             vpn_labels = {
                 'night': 'ОБХОД глушилок + VPN',
-                'regular': 'ULTRA FAST VPN',
+                'regular': 'Обычный VPN',
                 'fast': 'Обычный VPN',
             }
             vpn_label = vpn_labels.get(payment.vpn_type, 'VPN')
