@@ -2505,11 +2505,11 @@ async def cmd_start(message: Message, command: CommandObject = None):
 Верификация привязкой счёта отсекает агентов – они не могут каждый раз создавать новую карту. Результат: наши серверы стабильны, белые списки обходятся без перебоев.
 
 Мы не спишем ничего с этого счёта. После того, как привяжете счёт — вы автоматически получите <b>ПРОБНЫЙ ПЕРИОД — 3 ДНЯ 🔥</b>"""
-                            await asyncio.sleep(5)
                             await message.answer(trial_offer_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
                                 [InlineKeyboardButton(text="💳 Получить пробный доступ", callback_data="trial_offer_get")],
                                 [InlineKeyboardButton(text="💬 Поддержка", url="https://t.me/yamalube61")]
                             ]))
+                            await asyncio.sleep(5)
         except Exception as e:
             logging.warning(f"Ошибка проверки триала при старте: {e}")
 
@@ -5545,11 +5545,11 @@ async def issue_trial_key_for_vpn_type(callback, user_id, vpn_type, vpn_label):
     import aiohttp
     from config import PRICES, ULTRA_FAST_VPN_PRICES, FAST_VPN_PRICES
 
-    # Определяем тип подписки для рекуррента (месячная подписка — MONTH тип рекуррента)
+    # При привязке карты будет выдан ключ на 3 дня, а при первом списании (через 1 день) - продлен на 30 дней
     trial_config = {
-        'night': {'sub_type': 'month', 'price': PRICES.get('month', 390)},
-        'regular': {'sub_type': 'regular_month', 'price': ULTRA_FAST_VPN_PRICES.get('month', 190)},
-        'fast': {'sub_type': 'fast_month', 'price': FAST_VPN_PRICES.get('month', 150)},
+        'night': {'sub_type': 'trial', 'price': PRICES.get('month', 390)},
+        'regular': {'sub_type': 'regular_trial', 'price': ULTRA_FAST_VPN_PRICES.get('month', 190)},
+        'fast': {'sub_type': 'fast_trial', 'price': FAST_VPN_PRICES.get('month', 150)},
     }
     cfg = trial_config.get(vpn_type, trial_config['night'])
     amount = cfg['price']
